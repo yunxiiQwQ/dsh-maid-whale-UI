@@ -57,7 +57,9 @@ function parseStyleSheet(style: HTMLStyleElement): ParsedStyleSheet {
 export function foreignClassNames(body: HTMLElement): Set<string> {
   const names = new Set<string>()
   body.ownerDocument.querySelectorAll<HTMLStyleElement>('style[data-plugin-css]').forEach((style) => {
-    if ((style.dataset.pluginCss ?? '').startsWith(NATIVE_CSS_PREFIX)) return
+    const moduleId = style.dataset.pluginCss ?? ''
+    if (moduleId.startsWith(NATIVE_CSS_PREFIX) || moduleId === '@deepseek-ai/dsh-client-locale/LanguageRow.module.css')
+      return
     for (const name of parseStyleSheet(style).classNames) names.add(name)
   })
   return names

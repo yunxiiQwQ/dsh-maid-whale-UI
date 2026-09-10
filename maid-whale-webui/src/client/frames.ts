@@ -42,7 +42,8 @@ const SELECTORS: Record<FrameId, string> = {
   dialog: '[role="dialog"]',
   message: ':not(*)',
   menu: '[role="menu"], [role="listbox"], [role="combobox"]',
-  panel: 'main > section, [role="main"] > section, [data-settings-section]',
+  panel:
+    'main > section, [role="main"] > section, [data-settings-section], [data-slot="conversation.view"] .md-code-block',
   primaryButton: 'button[type="submit"], button[data-variant="primary"]',
 }
 
@@ -215,14 +216,35 @@ export function createFrameController(body: HTMLElement): FrameController {
       isForeignUi: createForeignUiGate(body),
     }
     const targets = selectTargets(pass)
+    const trajectoryClass = cssModuleClass(
+      body.ownerDocument,
+      '@deepseek-ai/dsh-client-ui-trajectory/views.module.css',
+      'root',
+    )
+    const customSettingsClass = cssModuleClass(
+      body.ownerDocument,
+      '@deepseek-ai/dsh-client-ui-settings-models/ModelsSection.module.css',
+      'customized',
+    )
     const desired = new Map<HTMLElement, DesiredFrame>()
+    const inputCardClass = cssModuleClass(
+      body.ownerDocument,
+      '@deepseek-ai/dsh-client-ui-conversation/InputBar.module.css',
+      'card',
+    )
+    const languageSelectorClass = cssModuleClass(
+      body.ownerDocument,
+      '@deepseek-ai/dsh-client-locale/LanguageRow.module.css',
+      'selector',
+    )
     for (const id of FRAME_IDS) {
       targets.get(id)?.forEach((target) => {
         desired.set(target, { frame: FRAME_VALUES[id] })
       })
     }
     targets.get('composer')?.forEach((target) => {
-      const shell = closestBorderedAncestor(target, pass)
+      const shell =
+        (inputCardClass && target.closest<HTMLElement>(`.${inputCardClass}`)) || closestBorderedAncestor(target, pass)
       if (shell) desired.set(shell, { frame: 'composer-shell' })
     })
     messageTargets(pass).forEach(({ target, role }) => {
@@ -242,12 +264,26 @@ export function createFrameController(body: HTMLElement): FrameController {
         desired.set(target, { frame: existing })
         return
       }
-      if (!target.hasAttribute('data-dsh-frame') && hasRenderedBorder(target, pass.styleOf)) {
+      if (
+        !target.hasAttribute('data-dsh-frame') &&
+        (hasRenderedBorder(target, pass.styleOf) ||
+          (languageSelectorClass && target.classList.contains(languageSelectorClass)))
+      ) {
         desired.set(target, {
           frame: target.matches(INTERACTIVE_FRAME_SELECTOR) ? 'control' : 'surface',
         })
       }
     })
+    if (trajectoryClass) {
+      desired.forEach((_frame, target) => {
+        if (target.closest(`.${trajectoryClass}`)) desired.delete(target)
+      })
+    }
+    if (customSettingsClass) {
+      desired.forEach((_frame, target) => {
+        if (target.parentElement?.closest(`.${customSettingsClass}`)) desired.delete(target)
+      })
+    }
     body.querySelectorAll<HTMLElement>('[data-dsh-frame], [data-dsh-message-role]').forEach((target) => {
       const next = desired.get(target)
       if (!next) {

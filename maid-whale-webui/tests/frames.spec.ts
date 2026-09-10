@@ -82,6 +82,81 @@ afterEach(() => {
 })
 
 describe('frame controller', () => {
+  it('keeps only the outer frame in model custom settings', () => {
+    const style = document.createElement('style')
+    style.dataset.pluginCss = '@deepseek-ai/dsh-client-ui-settings-models/ModelsSection.module.css'
+    style.textContent = '.models_customized{border-top:1px solid gray}'
+    document.head.append(style)
+    document.body.innerHTML = `
+      <details open class="models_customized" data-dsh-frame="surface">
+        <summary>自定义设置</summary>
+        <input type="text" style="border:1px solid gray" data-dsh-frame="control">
+        <section style="border:1px solid gray" data-dsh-frame="surface"><button type="submit">添加模型</button></section>
+      </details>
+      <button type="submit">Save</button>
+    `
+    controller = createFrameController(document.body)
+    controller.sync()
+    expect(document.querySelector('details')?.getAttribute('data-dsh-frame')).toBe('surface')
+    expect(document.querySelector('details [data-dsh-frame]')).toBeNull()
+    expect(document.querySelector('body > button')?.getAttribute('data-dsh-frame')).toBe('primary-button')
+  })
+
+  it('frames the native language row and selector', () => {
+    const style = document.createElement('style')
+    style.dataset.pluginCss = '@deepseek-ai/dsh-client-locale/LanguageRow.module.css'
+    style.textContent = '.locale_row{border-bottom:1px solid gray}.locale_selector{border:none}'
+    document.head.append(style)
+    document.body.innerHTML = '<div class="locale_row">语言<button class="locale_selector">中文</button></div>'
+    controller = createFrameController(document.body)
+    expect(document.querySelector('.locale_row')?.getAttribute('data-dsh-frame')).toBe('surface')
+    expect(document.querySelector('button')?.getAttribute('data-dsh-frame')).toBe('control')
+  })
+
+  it('frames the borderless InputBar card across repeated scans', () => {
+    const style = document.createElement('style')
+    style.dataset.pluginCss = '@deepseek-ai/dsh-client-ui-conversation/InputBar.module.css'
+    style.textContent = '.input_card{border:0}.input_scroll{border:0}'
+    document.head.append(style)
+    document.body.innerHTML =
+      '<div class="input_card"><div class="input_scroll"><div contenteditable="true"></div></div><button>Send</button></div>'
+    controller = createFrameController(document.body)
+    controller.sync()
+    expect(document.querySelector('.input_card')?.getAttribute('data-dsh-frame')).toBe('composer-shell')
+    expect(document.querySelector('.input_scroll')?.hasAttribute('data-dsh-frame')).toBe(false)
+  })
+
+  it('frames conversation code blocks while preserving foreign plugin code blocks', () => {
+    document.body.innerHTML =
+      '<div data-slot="conversation.view"><div class="md-code-block"><pre><code>npx astro preview status</code></pre></div></div>'
+    const foreign = mountForeignPluginCss()
+    foreign.innerHTML = '<div data-slot="conversation.view"><div class="md-code-block"><pre>example</pre></div></div>'
+    controller = createFrameController(document.body)
+    expect(document.querySelector('.md-code-block')?.getAttribute('data-dsh-frame')).toBe('panel')
+    expect(foreign.querySelector('[data-dsh-frame]')).toBeNull()
+  })
+
+  it('keeps trajectory cells and controls unframed and removes existing decorations', () => {
+    const style = document.createElement('style')
+    style.dataset.pluginCss = '@deepseek-ai/dsh-client-ui-trajectory/views.module.css'
+    style.textContent = '.trajectory_root{display:block}'
+    document.head.append(style)
+    document.body.innerHTML = `
+      <div class="trajectory_root">
+        <table><tbody><tr>
+          <td style="border:1px solid gray" data-dsh-frame="surface">Assistant</td>
+          <td style="border:1px solid gray">Message</td>
+        </tr></tbody></table>
+        <button type="submit" style="border:1px solid gray">Search</button>
+      </div>
+      <button type="submit">Send</button>
+    `
+    controller = createFrameController(document.body)
+    controller.sync()
+    expect(document.querySelector('.trajectory_root [data-dsh-frame]')).toBeNull()
+    expect(document.querySelector('body > button')?.getAttribute('data-dsh-frame')).toBe('primary-button')
+  })
+
   it('marks semantic targets idempotently and updates every frame resource by mode', () => {
     const { firstPanel, secondPanel } = fixture()
     controller = createFrameController(document.body)
