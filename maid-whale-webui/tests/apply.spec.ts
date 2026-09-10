@@ -287,6 +287,12 @@ describe('DeepSeek cloud paper skin', () => {
 describe('DeepSeek cloud paper stylesheet', () => {
   const stylesheet = readFileSync(resolve(process.cwd(), 'src/client/deepseek-workshop.module.css'), 'utf8')
 
+  it('uses the shell as the visible boundary of the composer editor', () => {
+    expect(stylesheet).toMatch(
+      /\[data-dsh-frame='composer-shell'\] \[data-composer-input\][^{]*\{[^}]*border-color: transparent !important[^}]*background-color: transparent/,
+    )
+  })
+
   it('defines the light and dusk-paper token surfaces', () => {
     expect(stylesheet).toContain('body[data-dsh-deepseek-workshop] {')
     expect(stylesheet).toContain('--dsw-alias-bg-base: rgba(251, 250, 245, 0.28)')

@@ -401,6 +401,11 @@ body[data-dsh-deepseek-workshop]
   transform: none;
 }
 
+body[data-dsh-deepseek-workshop] [data-dsh-frame='composer-shell'] [data-composer-input] {
+  border-color: transparent !important;
+  background-color: transparent !important;
+}
+
 body[data-dsh-deepseek-workshop] [data-dsh-frame='composer-shell'] {
   border-width: 1px;
   border-color: transparent;
