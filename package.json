@@ -7,7 +7,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git"
+    "url": "git+https://github.com/yunxiiQwQ/dsh-maid-whale-UI.git"
   },
   "packageManager": "pnpm@11.21.0",
   "scripts": {

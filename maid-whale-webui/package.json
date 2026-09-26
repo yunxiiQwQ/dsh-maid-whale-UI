@@ -40,12 +40,12 @@
   "license": "BSD-3-Clause",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git",
+    "url": "git+https://github.com/yunxiiQwQ/dsh-maid-whale-UI.git",
     "directory": "maid-whale-webui"
   },
-  "homepage": "https://github.com/yunxiiQwQ/dsh-maid-whale-webUI#readme",
+  "homepage": "https://github.com/yunxiiQwQ/dsh-maid-whale-UI#readme",
   "bugs": {
-    "url": "https://github.com/yunxiiQwQ/dsh-maid-whale-webUI/issues"
+    "url": "https://github.com/yunxiiQwQ/dsh-maid-whale-UI/issues"
   },
   "publishConfig": {
     "access": "public",

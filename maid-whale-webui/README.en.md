@@ -1,4 +1,4 @@
-# dsh-maid-whale-webUI
+# dsh-maid-whale-UI
 
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
@@ -31,7 +31,7 @@ Theme screenshots were captured in DeepSeek Harness Desktop 0.1.7-rc.2.
 Tell DSH:
 
 ```text
-Install this skin package: https://github.com/yunxiiQwQ/dsh-maid-whale-webUI/tree/main/maid-whale-webui
+Install this skin package: https://github.com/yunxiiQwQ/dsh-maid-whale-UI/tree/main/maid-whale-webui
 ```
 
 ### Desktop installation
@@ -39,8 +39,8 @@ Install this skin package: https://github.com/yunxiiQwQ/dsh-maid-whale-webUI/tre
 Fully exit DSH, including its tray process. Run these commands in a terminal with the DSH CLI available:
 
 ```powershell
-git clone https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git
-cd dsh-maid-whale-webUI
+git clone https://github.com/yunxiiQwQ/dsh-maid-whale-UI.git
+cd dsh-maid-whale-UI
 dsh plugin --profile desktop add ./maid-whale-webui
 ```
 
@@ -51,8 +51,8 @@ Then open DeepSeek Harness from its desktop shortcut. Desktop and Web use separa
 ```powershell
 # 1. Fully exit DSH, including the tray process
 # 2. Clone the repository and add the plugin
-git clone https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git
-cd dsh-maid-whale-webUI
+git clone https://github.com/yunxiiQwQ/dsh-maid-whale-UI.git
+cd dsh-maid-whale-UI
 dsh plugin --profile web add ./maid-whale-webui
 
 # 3. Start the DSH Web UI

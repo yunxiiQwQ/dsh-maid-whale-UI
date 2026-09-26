@@ -1,4 +1,4 @@
-# dsh-maid-whale-webUI
+# dsh-maid-whale-UI
 
 [![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
 
@@ -31,7 +31,7 @@
 直接对 DSH 说：
 
 ```text
-安装一下这个皮肤包：https://github.com/yunxiiQwQ/dsh-maid-whale-webUI/tree/main/maid-whale-webui
+安装一下这个皮肤包：https://github.com/yunxiiQwQ/dsh-maid-whale-UI/tree/main/maid-whale-webui
 ```
 
 ### 桌面端安装
@@ -39,8 +39,8 @@
 完全退出 DSH（包括托盘进程），在可使用 DSH CLI 的终端中执行：
 
 ```powershell
-git clone https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git
-cd dsh-maid-whale-webUI
+git clone https://github.com/yunxiiQwQ/dsh-maid-whale-UI.git
+cd dsh-maid-whale-UI
 dsh plugin --profile desktop add ./maid-whale-webui
 ```
 
@@ -51,8 +51,8 @@ dsh plugin --profile desktop add ./maid-whale-webui
 ```powershell
 # 1. 完全退出 DSH（包括托盘进程）
 # 2. 克隆仓库并添加插件
-git clone https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git
-cd dsh-maid-whale-webUI
+git clone https://github.com/yunxiiQwQ/dsh-maid-whale-UI.git
+cd dsh-maid-whale-UI
 dsh plugin --profile web add ./maid-whale-webui
 
 # 3. 启动 DSH Web UI
