@@ -28,7 +28,7 @@ async function tick(): Promise<void> {
   })
 }
 
-function mountConversationCssModules(): void {
+function mountConversationCssModules(packageName = 'ui-conversation'): void {
   const modules = [
     ['@deepseek-ai/dsh-client-ui-conversation/MessageItem.module.css', '.message_bubble{background:blue}'],
     [
@@ -39,7 +39,7 @@ function mountConversationCssModules(): void {
   ] as const
   for (const [id, css] of modules) {
     const style = document.createElement('style')
-    style.dataset.pluginCss = id
+    style.dataset.pluginCss = id.replace('ui-conversation', packageName)
     style.textContent = css
     document.head.append(style)
   }
@@ -113,6 +113,72 @@ describe('frame controller', () => {
     expect(document.querySelector('button')?.getAttribute('data-dsh-frame')).toBe('control')
   })
 
+  it('frames the borderless font stepper and ARIA switch as controls', () => {
+    const theme = document.createElement('style')
+    theme.dataset.pluginCss = '@deepseek-ai/dsh-client-ui-theme/FontSizeRow.module.css'
+    theme.textContent = '.fontsize_row{border-bottom:1px solid gray}.fontsize_stepper{border:none;min-width:72px}'
+    document.head.append(theme)
+    document.body.innerHTML = `
+      <div class="fontsize_row">
+        <div class="fontsize_stepper"><span>14</span></div>
+        <button type="button" role="switch" aria-checked="true"><span></span></button>
+      </div>
+    `
+    controller = createFrameController(document.body)
+    expect(document.querySelector('.fontsize_row')?.getAttribute('data-dsh-frame')).toBe('surface')
+    expect(document.querySelector('.fontsize_stepper')?.getAttribute('data-dsh-frame')).toBe('control')
+    expect(document.querySelector('[role="switch"]')?.getAttribute('data-dsh-frame')).toBe('control')
+    expect(document.querySelector('.fontsize_stepper > span')?.hasAttribute('data-dsh-frame')).toBe(false)
+  })
+
+  it('frames the permission, preference, enter-behaviour, and shortcut pills', () => {
+    const modules = [
+      ['@deepseek-ai/dsh-client-ui-permission-presets/PermissionRow.module.css', 'perm_selector'],
+      ['@deepseek-ai/dsh-client-ui-chat/PreferenceRow.module.css', 'pref_selector'],
+      ['@deepseek-ai/dsh-client-ui-conversation/EnterBehaviorRow.module.css', 'enter_selector'],
+      ['@deepseek-ai/dsh-client-ui-shortcuts/Reference.module.css', 'kbd_button'],
+    ] as const
+    for (const [moduleId, pillClass] of modules) {
+      const style = document.createElement('style')
+      style.dataset.pluginCss = moduleId
+      style.textContent = `.${pillClass}{border:none}`
+      document.head.append(style)
+    }
+    document.body.innerHTML = `
+      <button type="button" class="perm_selector">完全权限</button>
+      <button type="button" class="pref_selector">标准</button>
+      <button type="button" class="enter_selector">排队发送</button>
+      <button type="button" class="kbd_button">编辑快捷键</button>
+    `
+    controller = createFrameController(document.body)
+    expect(document.querySelector('.perm_selector')?.getAttribute('data-dsh-frame')).toBe('control')
+    expect(document.querySelector('.pref_selector')?.getAttribute('data-dsh-frame')).toBe('control')
+    expect(document.querySelector('.enter_selector')?.getAttribute('data-dsh-frame')).toBe('control')
+    expect(document.querySelector('.kbd_button')?.getAttribute('data-dsh-frame')).toBe('control')
+  })
+
+  /* The skin gives the sidebar workspace block a transparent border (the seam
+     line itself is a pseudo-element), so the controller must claim the block
+     as a surface frame while the sidebar column, which draws no real border,
+     stays unstamped. */
+  it('frames the workspace block while the sidebar column itself stays unframed', () => {
+    const style = document.createElement('style')
+    style.dataset.pluginCss = '@deepseek-ai/dsh-client-ui-workspaces/Workspaces.module.css'
+    style.textContent = '.workspaces_root{border:2px solid transparent}'
+    document.head.append(style)
+    document.body.innerHTML = `
+      <div data-dsh-sidebar-surface>
+        <div data-slot="sidebar.workspaces">
+          <div class="workspaces_root"><h2>工作区</h2><ul role="tree"></ul></div>
+        </div>
+      </div>
+    `
+    controller = createFrameController(document.body)
+    controller.sync()
+    expect(document.querySelector('.workspaces_root')?.getAttribute('data-dsh-frame')).toBe('surface')
+    expect(document.querySelector('[data-dsh-sidebar-surface]')?.hasAttribute('data-dsh-frame')).toBe(false)
+  })
+
   it('frames the borderless InputBar card across repeated scans', () => {
     const style = document.createElement('style')
     style.dataset.pluginCss = '@deepseek-ai/dsh-client-ui-conversation/InputBar.module.css'
@@ -154,6 +220,25 @@ describe('frame controller', () => {
     controller = createFrameController(document.body)
     controller.sync()
     expect(document.querySelector('.trajectory_root [data-dsh-frame]')).toBeNull()
+    expect(document.querySelector('body > button')?.getAttribute('data-dsh-frame')).toBe('primary-button')
+  })
+
+  it('keeps the platform usage overlay unframed and removes existing decorations', () => {
+    const style = document.createElement('style')
+    style.dataset.pluginCss = '@deepseek-ai/dsh-client-ui-settings-account/PlatformOverlay.module.css'
+    style.textContent = '.platform_overlay{display:block}'
+    document.head.append(style)
+    document.body.innerHTML = `
+      <div class="platform_overlay" role="dialog" data-dsh-frame="dialog">
+        <header style="border:1px solid gray" data-dsh-frame="surface">返回 DeepSeek Harness</header>
+        <button type="submit" style="border:1px solid gray">导出</button>
+      </div>
+      <button type="submit">Send</button>
+    `
+    controller = createFrameController(document.body)
+    controller.sync()
+    expect(document.querySelector('.platform_overlay')?.hasAttribute('data-dsh-frame')).toBe(false)
+    expect(document.querySelector('.platform_overlay [data-dsh-frame]')).toBeNull()
     expect(document.querySelector('body > button')?.getAttribute('data-dsh-frame')).toBe('primary-button')
   })
 
@@ -387,34 +472,37 @@ describe('frame controller', () => {
     expect(shell.dataset.dshFrame).toBe('composer-shell')
   })
 
-  it('frames sent messages and final assistant replies without framing reasoning-only rows', () => {
-    fixture()
-    mountConversationCssModules()
-    const userMessage = document.createElement('div')
-    userMessage.className = 'message_bubble'
-    userMessage.textContent = 'Sent message'
-    const assistantReply = document.createElement('div')
-    assistantReply.className = 'assistant_root'
-    assistantReply.innerHTML =
-      '<div class="assistant_body"><div class="reasoning_root">Think before answering</div><article data-final-reply>Final reply</article></div>'
-    const finalReply = assistantReply.querySelector<HTMLElement>('[data-final-reply]')!
-    const reasoningOnly = document.createElement('div')
-    reasoningOnly.className = 'assistant_root'
-    reasoningOnly.innerHTML = '<div class="assistant_body"><div class="reasoning_root">Think</div></div>'
-    document.querySelector('main')!.append(userMessage, assistantReply, reasoningOnly)
+  it.each(['ui-conversation', 'ui-chat'])(
+    'frames messages in %s without framing reasoning-only rows',
+    (packageName) => {
+      fixture()
+      mountConversationCssModules(packageName)
+      const userMessage = document.createElement('div')
+      userMessage.className = 'message_bubble'
+      userMessage.textContent = 'Sent message'
+      const assistantReply = document.createElement('div')
+      assistantReply.className = 'assistant_root'
+      assistantReply.innerHTML =
+        '<div class="assistant_body"><div class="reasoning_root">Think before answering</div><article data-final-reply>Final reply</article></div>'
+      const finalReply = assistantReply.querySelector<HTMLElement>('[data-final-reply]')!
+      const reasoningOnly = document.createElement('div')
+      reasoningOnly.className = 'assistant_root'
+      reasoningOnly.innerHTML = '<div class="assistant_body"><div class="reasoning_root">Think</div></div>'
+      document.querySelector('main')!.append(userMessage, assistantReply, reasoningOnly)
 
-    controller = createFrameController(document.body)
-    controller.sync()
+      controller = createFrameController(document.body)
+      controller.sync()
 
-    expect(userMessage.dataset.dshFrame).toBe('message')
-    expect(userMessage.dataset.dshMessageRole).toBe('user')
-    expect(assistantReply.hasAttribute('data-dsh-frame')).toBe(false)
-    expect(finalReply.dataset.dshFrame).toBe('message')
-    expect(finalReply.dataset.dshMessageRole).toBe('assistant')
-    expect(assistantReply.querySelector('.reasoning_root')?.hasAttribute('data-dsh-frame')).toBe(false)
-    expect(reasoningOnly.hasAttribute('data-dsh-frame')).toBe(false)
-    expect(reasoningOnly.hasAttribute('data-dsh-message-role')).toBe(false)
-  })
+      expect(userMessage.dataset.dshFrame).toBe('message')
+      expect(userMessage.dataset.dshMessageRole).toBe('user')
+      expect(assistantReply.hasAttribute('data-dsh-frame')).toBe(false)
+      expect(finalReply.dataset.dshFrame).toBe('message')
+      expect(finalReply.dataset.dshMessageRole).toBe('assistant')
+      expect(assistantReply.querySelector('.reasoning_root')?.hasAttribute('data-dsh-frame')).toBe(false)
+      expect(reasoningOnly.hasAttribute('data-dsh-frame')).toBe(false)
+      expect(reasoningOnly.hasAttribute('data-dsh-message-role')).toBe(false)
+    },
+  )
 
   it('keeps existing message markers stable across repeated synchronization', async () => {
     fixture()

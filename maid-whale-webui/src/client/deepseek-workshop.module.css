@@ -461,6 +461,22 @@ body[data-dsh-deepseek-workshop] [data-dsh-frame='control'] {
   border-image-outset: 4px 2px 4px 2px;
 }
 
+/* The workspace block is the sidebar's main surface. A transparent border lets
+   the frame controller claim it as a surface frame (the same mechanism that
+   frames the tree items). Rule order carries the border-image contract: the
+   border shorthand (lightningcss merges any border longhands back into it)
+   resets border-image to none, so this must sit BEFORE the surface frame rule
+   below — which wins the frame art back — and AFTER the base [data-dsh-frame]
+   rule above — so the border stays transparent instead of its l2 ink. Margins
+   keep the outset clear of the scrolling region edges that sit flush against
+   the block; padding keeps the header and tree content off the drawn strips. */
+body[data-dsh-deepseek-workshop] [data-slot='sidebar.workspaces'] > * {
+  box-sizing: border-box;
+  border: 2px solid transparent;
+  margin: 6px 6px 12px 2px;
+  padding: 8px 10px 8px 12px;
+}
+
 body[data-dsh-deepseek-workshop] [data-dsh-frame='surface'] {
   border-image-source: var(--dsw-frame-panel);
   border-image-slice: 70 95 70 110 fill;
@@ -508,10 +524,81 @@ body[data-dsh-deepseek-workshop] [data-slot='sidebar.settings'] [data-dsh-frame=
   padding-inline-end: 16px !important;
 }
 
+/* Nine-grid seam between the workspace sidebar and the conversation column:
+   a full-height pseudo-element draws only the right slice of the shared frame
+   art (no fill), so the sidebar ocean stays visible and the frame controller,
+   which scans real elements, never claims the sidebar surface itself. */
+body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface] {
+  position: relative;
+}
+
+body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface]::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 25.5px;
+  border-style: solid;
+  border-width: 0 2px 0 0;
+  border-image: var(--dsw-frame-panel) 70 95 70 110 / 0 28.5px 0 0 / 0 3px 0 0 stretch;
+  pointer-events: none;
+}
+
 body[data-dsh-deepseek-workshop] [data-settings-section][data-dsh-frame='panel'],
 body[data-dsh-deepseek-workshop] [role='dialog'] [data-dsh-frame='panel'] {
   padding-block: 14px;
   padding-inline: 16px;
+}
+
+/* The portaled settings dialog stacks general-item slot wrappers flush, so
+   consecutive row surface frames overlap their 6px outsets, and the rows
+   carry no horizontal padding, so row-anchored pill controls collide with
+   the row frame line. Space framed rows from their neighbours and the frame
+   edges, and widen the theme-cube gap past the control-frame outset. */
+body[data-dsh-deepseek-workshop] [role='dialog'] [data-slot='settings.general.item'] > [data-dsh-frame='surface'] {
+  margin-block-end: 16px;
+  padding-inline: 14px;
+}
+
+body[data-dsh-deepseek-workshop]
+  [role='dialog']
+  [data-slot='settings.general.item']:first-of-type
+  > [data-dsh-frame='surface'] {
+  margin-block-start: 10px;
+}
+
+body[data-dsh-deepseek-workshop] [role='dialog'] [data-slot='settings.general.item'] [data-dsh-control-row] {
+  gap: 12px;
+}
+
+/* A framed switch grows one step so its 16px thumb clears the 2px frame plus
+   the 2px track padding on both ends; the checked-state 16px translate stays
+   symmetric inside the widened track. */
+body[data-dsh-deepseek-workshop] [data-dsh-frame='control'][role='switch'] {
+  width: 40px;
+  height: 24px;
+}
+
+/* Keep the drawn frame on the sidebar shell and the selected conversation. */
+body[data-dsh-deepseek-workshop] [role='treeitem']:not([aria-selected='true'])[data-dsh-frame],
+body[data-dsh-deepseek-workshop]
+  [role='treeitem']:not([aria-selected='true'])
+  [data-dsh-frame]:not([data-dsh-frame='selected-nav']) {
+  border-image-source: none;
+  border-color: transparent;
+}
+
+/* Settings rows use quiet dividers; the dialog remains the decorative frame. */
+body[data-dsh-deepseek-workshop] [role='dialog'] [data-slot='settings.general.item'] > [data-dsh-frame='surface'] {
+  border: 0;
+  border-bottom: 1px solid var(--dsw-alias-border-l2);
+  border-radius: 0;
+}
+
+body[data-dsh-deepseek-workshop] [role='dialog'] [data-slot='settings.general.item'] [data-dsh-frame='control'] {
+  border-image-source: none;
+  border-color: var(--dsw-alias-border-l2);
+  border-radius: 8px;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='message'] {
@@ -696,6 +783,12 @@ body[data-dsh-deepseek-workshop] .petToggleImage {
     border-image-width: 14px 19px 14px 22px;
   }
 
+  body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface]::after {
+    width: 18px;
+    border-image-width: 0 19px 0 0;
+    border-image-outset: 0 1px 0 0;
+  }
+
   body[data-dsh-deepseek-workshop]
     :is([data-dsh-frame='composer'], [data-dsh-frame='dialog'], [data-dsh-frame='menu'], [data-dsh-frame='message']) {
     box-shadow: 0 7px 18px rgba(36, 55, 70, 0.09);
@@ -735,5 +828,9 @@ body[data-dsh-deepseek-workshop] .petToggleImage {
 
   body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface] {
     background-image: none !important;
+  }
+
+  body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface]::after {
+    border-image-source: none !important;
   }
 }

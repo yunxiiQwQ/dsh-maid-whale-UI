@@ -4,15 +4,23 @@
 
 English | [中文](README.md)
 
-A whale-maid theme plugin for the DeepSeek Harness Web UI, featuring light and dark themes, ocean illustration wallpapers, hand-drawn frames, and a native Windows cloud-whale companion that starts and stops with DSH.
+A whale-maid theme plugin for the DeepSeek Harness desktop app and Web UI, featuring light and dark themes, ocean illustration wallpapers, hand-drawn frames, and a native Windows cloud-whale companion that starts and stops with DSH.
 
 ## Theme and Pet Preview
 
-All images below were freshly captured from the current repository version running locally.
+Theme and settings screenshots were captured in DeepSeek Harness Desktop 0.1.7-rc.2.
 
 | Light mode | Dark mode |
 | --- | --- |
 | [![Light theme on an empty new-session page](maid-whale-webui/preview/theme-light.png)](maid-whale-webui/preview/theme-light.png) | [![Dark theme on an empty new-session page](maid-whale-webui/preview/theme-dark.png)](maid-whale-webui/preview/theme-dark.png) |
+
+### Settings Preview
+
+The settings panel uses a hand-drawn outer frame with standard controls inside.
+
+| Light settings | Dark settings |
+| --- | --- |
+| ![Light settings](maid-whale-webui/preview/settings-light.png) | ![Dark settings](maid-whale-webui/preview/settings-dark.png) |
 
 ### Pet Preview
 
@@ -22,7 +30,7 @@ All images below were freshly captured from the current repository version runni
 
 ### Requirements
 
-- A working DSH (DeepSeek Harness) Web UI.
+- A working DSH (DeepSeek Harness) desktop app or Web UI.
 - Windows 10/11 x64 for the native companion; the Web UI theme itself is platform-independent.
 - No separate Python or Node installation is required: the companion helper is included in the plugin package.
 
@@ -34,7 +42,19 @@ Tell DSH:
 Install this skin package: https://github.com/yunxiiQwQ/dsh-maid-whale-webUI/tree/main/maid-whale-webui
 ```
 
-### Manual installation
+### Desktop installation
+
+Fully exit DSH, including its tray process. Run these commands in a terminal with the DSH CLI available:
+
+```powershell
+git clone https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git
+cd dsh-maid-whale-webUI
+dsh plugin --profile desktop add ./maid-whale-webui
+```
+
+Then open DeepSeek Harness from its desktop shortcut. Desktop and Web use separate profiles. The companion menu's **Open DSH** entry brings the desktop window forward through `dsh://open`; no fixed localhost port is needed.
+
+### Web installation
 
 ```powershell
 # 1. Fully exit DSH, including the tray process
@@ -52,10 +72,14 @@ The theme applies automatically and the companion appears when DSH starts. If th
 ### Update and uninstall
 
 ```powershell
-# Update: pull the latest repository changes, then restart DSH
+# Update either edition: fully exit DSH, pull in the repository, then reopen it
 git pull
 
 # Uninstall: fully exit DSH first
+# Desktop
+dsh plugin --profile desktop remove @yunxii/dsh-client-ui-skin-maid-whale-webui
+
+# Web
 dsh plugin --profile web remove @yunxii/dsh-client-ui-skin-maid-whale-webui
 ```
 
@@ -80,6 +104,37 @@ dsh plugin --profile web remove @yunxii/dsh-client-ui-skin-maid-whale-webui
 | Idle micro-actions | Randomly shown while idle when reduced motion is disabled |
 
 After an interaction ends, the companion returns to the latest Agent state. When several sessions are active, the display priority is: waiting → error → working → thinking → idle.
+
+## Project structure and development
+
+The repository root provides documentation and command shortcuts. The installable plugin lives in `maid-whale-webui/`:
+
+| Path | Purpose |
+| --- | --- |
+| `src/client/` | Theme styles, frames, ornaments, and companion settings |
+| `src/index.ts`, `src/host/` | Host entry, DSH events, and companion process bridge |
+| `runtime/` | Python/Qt companion and Windows executable |
+| `assets/`, `preview/` | Source artwork and UI previews |
+| `build/`, `scripts/` | Bundle configuration, artwork embedding, and packaging checks |
+| `tests/`, `runtime/tests/` | Client/Host and Python tests |
+| `lib/` | Committed client and Host bundles loaded by DSH |
+
+Use Node.js 22.19+ and pnpm 11.21.0. From the repository root:
+
+```bash
+cd maid-whale-webui
+pnpm install --frozen-lockfile
+pnpm art:embed:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm pack:check
+```
+
+After editing artwork, run `pnpm art:embed` before building. Commit updated `lib/` bundles with source changes. For companion development, install `requirements.txt` and `requirements-test.txt`, then run `pnpm test:python`. On Windows, `pnpm build:helper:windows` builds the executable and its SHA-256 file using the build requirements.
+
+The desktop app and Web UI share the client bundle. Message styling supports both the `ui-chat` and `ui-conversation` modules; desktop windows retain their application title and icon.
 
 ## Disclaimer
 

@@ -1916,7 +1916,7 @@ function mount(ctx, config = {}, eventCtx = ctx) {
 				DSH_DAFEIYU_REDUCED_MOTION: resolved.reducedMotion === true ? "1" : "0",
 				DSH_DAFEIYU_BUBBLE_MODE: String(resolved.bubbleMode ?? defaults.bubbleMode),
 				DSH_DAFEIYU_BUBBLE_STATES: (Array.isArray(resolved.bubbleStates) ? resolved.bubbleStates : defaults.bubbleStates).join(","),
-				DSH_DAFEIYU_WEBUI_URL: String(config.webuiUrl ?? process.env.DSH_DAFEIYU_WEBUI_URL ?? "http://127.0.0.1:3080/")
+				DSH_DAFEIYU_WEBUI_URL: String(process.env.DSH_DESKTOP_NODE_EXECUTABLE ? "dsh://open" : config.webuiUrl ?? process.env.DSH_DAFEIYU_WEBUI_URL ?? "http://127.0.0.1:3080/")
 			}
 		}, logger);
 		reducer = new CompanionReducer({ includeSubagents: resolved.includeSubagents === true });

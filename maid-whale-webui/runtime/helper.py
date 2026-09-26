@@ -140,9 +140,9 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
         from PySide6.QtCore import QObject, QPoint, QRect, QRectF, Qt, QTimer, QUrl, Signal
         from PySide6.QtGui import QColor, QDesktopServices, QFont, QFontMetrics, QMouseEvent, QPainter, QPen, QPixmap
         from PySide6.QtWidgets import QApplication, QMenu, QWidget
-    except ImportError:
+    except ImportError as error:
         print(
-            "PySide6 is required for visual mode. Run with --headless for protocol tests.",
+            f"PySide6 is required for visual mode: {error}. Run with --headless for protocol tests.",
             file=sys.stderr,
         )
         recorder.close()
@@ -233,6 +233,10 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             self.task = ""
             self.tasks: list[dict[str, Any]] = []
             self.webui_url = os.environ.get("DSH_DAFEIYU_WEBUI_URL", "http://127.0.0.1:3080/")
+            # The desktop Host runs Electron in Node mode. Do not pass that
+            # mode to the app launched by the registered dsh:// URL handler.
+            if self.webui_url == "dsh://open":
+                os.environ.pop("ELECTRON_RUN_AS_NODE", None)
             self.shake_timer: QTimer | None = None
             self.shake_origin: QPoint | None = None
             self.shake_count = 0
@@ -1083,7 +1087,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             reduced_action = menu.addAction("减少动态")
             reduced_action.setCheckable(True)
             reduced_action.setChecked(self.reduced_motion)
-            open_webui_action = menu.addAction("打开 WebUI")
+            open_webui_action = menu.addAction("打开 DSH" if self.webui_url == "dsh://open" else "打开 WebUI")
             menu.addSeparator()
             hide_action = menu.addAction("本次隐藏")
             exit_action = menu.addAction("本次关闭")

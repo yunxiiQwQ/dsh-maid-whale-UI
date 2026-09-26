@@ -9,6 +9,10 @@ import { createOrnamentController } from './ornaments.ts'
 
 const BODY_ATTR = 'data-dsh-deepseek-workshop'
 const SKIN_TITLE = 'DeepSeek 云鲸纸面'
+// Published by the Desktop shell's application preload before any page script
+// runs. The Desktop window keeps its native chrome (taskbar title, window
+// icon), so the browser-only title/favicon rebranding is skipped there.
+const isDesktopShell = (): boolean => (globalThis as { dshDesktopBoot?: unknown }).dshDesktopBoot !== undefined
 const WIDE_QUERY = '(min-width: 960px)'
 const SIDEBAR_ATTR = 'data-dsh-sidebar-surface'
 const SIDEBAR_BACKGROUND_PROPERTY = '--dsw-sidebar-ocean-background'
@@ -33,12 +37,14 @@ export function apply(ctx: Context): void {
 
   body.setAttribute(BODY_ATTR, '')
 
-  const favicon = document.createElement('link')
-  favicon.rel = 'icon'
-  favicon.type = 'image/webp'
-  favicon.href = MASCOT_ART
-  favicon.dataset.deepseekWorkshopIcon = ''
-  document.head.append(favicon)
+  if (!isDesktopShell()) {
+    const favicon = document.createElement('link')
+    favicon.rel = 'icon'
+    favicon.type = 'image/webp'
+    favicon.href = MASCOT_ART
+    favicon.dataset.deepseekWorkshopIcon = ''
+    document.head.append(favicon)
+  }
 
   const media = typeof window.matchMedia === 'function' ? window.matchMedia(WIDE_QUERY) : undefined
   let sidebarSurface: HTMLElement | undefined
@@ -142,7 +148,7 @@ export function apply(ctx: Context): void {
       : 'linear-gradient(rgba(255, 254, 249, 0.60), rgba(255, 254, 249, 0.60))'
     const paper = dark ? PAPER_BACKDROP_DARK : PAPER_BACKDROP_LIGHT
     body.style.setProperty('background-image', `${haze}, url("${ILLUSTRATED_BACKGROUND}"), ${paper}`)
-    body.style.setProperty('background-position', 'center, calc(50% + 80px) calc(100% - 80px), center, center, center')
+    body.style.setProperty('background-position', 'center, center, center, center, center')
     body.style.setProperty('background-size', 'cover, cover, cover, cover, cover')
     body.style.setProperty('background-attachment', 'fixed')
     body.style.setProperty('background-repeat', 'no-repeat')
@@ -182,7 +188,7 @@ export function apply(ctx: Context): void {
   window.addEventListener('resize', scheduleChrome)
 
   setBackdrop()
-  document.title = SKIN_TITLE
+  if (!isDesktopShell()) document.title = SKIN_TITLE
   registerCompanionSettingsCard(ctx)
 
   const observer = new MutationObserver(setBackdrop)
@@ -200,7 +206,7 @@ export function apply(ctx: Context): void {
       window.removeEventListener('resize', scheduleChrome)
       clearSidebarSurface()
       body.removeAttribute(BODY_ATTR)
-      favicon.remove()
+      document.querySelector('link[data-deepseek-workshop-icon]')?.remove()
       petToggle.remove()
       for (const [property, value] of previous) {
         if (value === '') body.style.removeProperty(property)

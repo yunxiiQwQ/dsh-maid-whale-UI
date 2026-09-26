@@ -4,15 +4,23 @@
 
 [English](README.en.md) | 中文
 
-DeepSeek Harness Web UI 的鲸鱼女仆主题插件：提供亮暗双主题、海洋插画壁纸、手绘边框，以及随 DSH 启停的原生 Windows 鲸鱼桌宠。
+适用于 DeepSeek Harness 桌面端和 Web UI 的鲸鱼女仆主题插件：提供亮暗双主题、海洋插画壁纸、手绘边框，以及随 DSH 启停的原生 Windows 鲸鱼桌宠。
 
 ## 主题和 Pet 预览
 
-以下图片均由本仓库当前版本实际运行后重新截取。
+主题与设置页截图来自 DeepSeek Harness 桌面端 0.1.7-rc.2。
 
 | 亮色模式 | 暗色模式 |
 | --- | --- |
 | [![无对话页面的亮色主题](maid-whale-webui/preview/theme-light.png)](maid-whale-webui/preview/theme-light.png) | [![无对话页面的暗色主题](maid-whale-webui/preview/theme-dark.png)](maid-whale-webui/preview/theme-dark.png) |
+
+### 设置页预览
+
+设置面板以手绘外框包围内容，内部使用原生控件。
+
+| 亮色设置 | 暗色设置 |
+| --- | --- |
+| ![亮色设置页](maid-whale-webui/preview/settings-light.png) | ![暗色设置页](maid-whale-webui/preview/settings-dark.png) |
 
 ### Pet 预览
 
@@ -22,7 +30,7 @@ DeepSeek Harness Web UI 的鲸鱼女仆主题插件：提供亮暗双主题、�
 
 ### 环境要求
 
-- 可正常运行的 DSH（DeepSeek Harness）Web UI。
+- 可正常运行的 DSH（DeepSeek Harness）桌面端或 Web UI。
 - Windows 10/11 x64：原生桌宠仅支持 Windows；单独使用 Web UI 主题不受此限制。
 - 无需另外安装 Python 或 Node：桌宠帮助程序已包含在插件包中。
 
@@ -34,7 +42,19 @@ DeepSeek Harness Web UI 的鲸鱼女仆主题插件：提供亮暗双主题、�
 安装一下这个皮肤包：https://github.com/yunxiiQwQ/dsh-maid-whale-webUI/tree/main/maid-whale-webui
 ```
 
-### 手动安装
+### 桌面端安装
+
+完全退出 DSH（包括托盘进程），在可使用 DSH CLI 的终端中执行：
+
+```powershell
+git clone https://github.com/yunxiiQwQ/dsh-maid-whale-webUI.git
+cd dsh-maid-whale-webUI
+dsh plugin --profile desktop add ./maid-whale-webui
+```
+
+随后从桌面快捷方式打开 DeepSeek Harness。桌面端和 Web 端使用独立的 profile。桌宠菜单中的 **打开 DSH** 会通过 `dsh://open` 唤起桌面窗口，无需配置固定的本地端口。
+
+### Web 端安装
 
 ```powershell
 # 1. 完全退出 DSH（包括托盘进程）
@@ -52,10 +72,14 @@ dsh --profile web
 ### 更新与卸载
 
 ```powershell
-# 更新：在仓库目录拉取最新版本，然后重启 DSH
+# 更新任一版本：完全退出 DSH，在仓库目录拉取最新版本，再重新打开
 git pull
 
 # 卸载：先完全退出 DSH
+# 桌面端
+dsh plugin --profile desktop remove @yunxii/dsh-client-ui-skin-maid-whale-webui
+
+# Web 端
 dsh plugin --profile web remove @yunxii/dsh-client-ui-skin-maid-whale-webui
 ```
 
@@ -80,6 +104,37 @@ dsh plugin --profile web remove @yunxii/dsh-client-ui-skin-maid-whale-webui
 | 空闲小动作 | 空闲且未开启“减少动态效果”时随机播放 |
 
 交互动作结束后，桌宠会回到最新的 Agent 状态。多会话同时活动时，显示优先级为：等待确认 → 错误 → 工作 → 思考 → 空闲。
+
+## 工程结构与开发
+
+仓库根目录提供文档和命令入口，可安装的插件位于 `maid-whale-webui/`：
+
+| 路径 | 用途 |
+| --- | --- |
+| `src/client/` | 主题样式、边框、装饰和桌宠设置 |
+| `src/index.ts`、`src/host/` | Host 入口、DSH 事件和桌宠进程桥接 |
+| `runtime/` | Python/Qt 桌宠与 Windows 可执行文件 |
+| `assets/`、`preview/` | 原始美术素材与界面预览 |
+| `build/`、`scripts/` | 打包配置、素材嵌入和发布检查 |
+| `tests/`、`runtime/tests/` | 客户端、Host 和 Python 测试 |
+| `lib/` | 随仓库提交、供 DSH 加载的客户端和 Host 构建产物 |
+
+开发需要 Node.js 22.19+ 和 pnpm 11.21.0。从仓库根目录执行：
+
+```bash
+cd maid-whale-webui
+pnpm install --frozen-lockfile
+pnpm art:embed:check
+pnpm lint
+pnpm typecheck
+pnpm test
+pnpm build
+pnpm pack:check
+```
+
+修改美术素材后，先运行 `pnpm art:embed` 再构建；源码改动应连同更新后的 `lib/` 一起提交。开发桌宠时，安装 `requirements.txt` 和 `requirements-test.txt` 中的依赖，再运行 `pnpm test:python`。Windows 下通过 `pnpm build:helper:windows` 使用构建依赖生成可执行文件和 SHA-256 校验文件。
+
+桌面端与 Web 端共用客户端构建产物。消息样式兼容 `ui-chat` 和 `ui-conversation` 模块；桌面窗口保留应用标题和图标。
 
 ## 声明
 

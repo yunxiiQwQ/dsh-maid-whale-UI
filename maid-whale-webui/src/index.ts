@@ -272,7 +272,9 @@ function mount(ctx: MinimalContext, config: CompanionConfig = {}, eventCtx: Mini
             : defaults.bubbleStates
           ).join(','),
           DSH_DAFEIYU_WEBUI_URL: String(
-            config.webuiUrl ?? process.env.DSH_DAFEIYU_WEBUI_URL ?? 'http://127.0.0.1:3080/',
+            process.env.DSH_DESKTOP_NODE_EXECUTABLE
+              ? 'dsh://open'
+              : (config.webuiUrl ?? process.env.DSH_DAFEIYU_WEBUI_URL ?? 'http://127.0.0.1:3080/'),
           ),
         },
       },

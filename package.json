@@ -2,7 +2,7 @@
   "name": "dsh-maid-whale-webui-workspace",
   "version": "0.1.0",
   "private": true,
-  "description": "Cloud-paper DeepSeek skin for the DSH web GUI with the deepseek-drool character as a quiet page-edge mascot",
+  "description": "Whale-maid theme for DeepSeek Harness desktop and Web UI with a native Windows companion",
   "license": "BSD-3-Clause",
   "type": "module",
   "repository": {

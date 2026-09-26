@@ -63,7 +63,8 @@ const INTERACTIVE_FRAME_SELECTOR = [
 // Third-party plugin interfaces and the skin's own injected chrome keep their
 // native borders; every framing pass rejects plugin-authored subtrees (see
 // createForeignUiGate) so decorations stay on the DSH-hosted UI only.
-const FRAME_EXCLUSION_SELECTOR = 'a, [role="link"], [data-skin-chrome], [data-skin-chrome] *'
+const FRAME_EXCLUSION_SELECTOR =
+  'a, [role="link"], code, code *, [data-shortcut-modal="settings"] *, [data-skin-chrome], [data-skin-chrome] *'
 
 const CONVERSATION_CSS_MODULES = {
   userMessage: '@deepseek-ai/dsh-client-ui-conversation/MessageItem.module.css',
@@ -94,10 +95,14 @@ interface ScanPass {
 function messageTargets(pass: ScanPass): MessageTarget[] {
   const body = pass.body
   const document = body.ownerDocument
-  const userBubbleClass = cssModuleClass(document, CONVERSATION_CSS_MODULES.userMessage, 'bubble')
-  const assistantRootClass = cssModuleClass(document, CONVERSATION_CSS_MODULES.assistantMessage, 'root')
-  const assistantBodyClass = cssModuleClass(document, CONVERSATION_CSS_MODULES.assistantMessage, 'body')
-  const reasoningRootClass = cssModuleClass(document, CONVERSATION_CSS_MODULES.reasoning, 'root')
+  // DSH moved message rendering into ui-chat; older Web hosts still use ui-conversation.
+  const messageClass = (moduleId: string, exportName: string) =>
+    cssModuleClass(document, moduleId.replace('ui-conversation', 'ui-chat'), exportName) ??
+    cssModuleClass(document, moduleId, exportName)
+  const userBubbleClass = messageClass(CONVERSATION_CSS_MODULES.userMessage, 'bubble')
+  const assistantRootClass = messageClass(CONVERSATION_CSS_MODULES.assistantMessage, 'root')
+  const assistantBodyClass = messageClass(CONVERSATION_CSS_MODULES.assistantMessage, 'body')
+  const reasoningRootClass = messageClass(CONVERSATION_CSS_MODULES.reasoning, 'root')
 
   const userMessages = userBubbleClass
     ? Array.from(body.getElementsByClassName(userBubbleClass)).filter(
@@ -150,6 +155,34 @@ function hasRenderedBorder(target: HTMLElement, styleOf: StyleReader): boolean {
     [style.borderBottomWidth, style.borderBottomStyle],
     [style.borderLeftWidth, style.borderLeftStyle],
   ].some(([width, borderStyle]) => Number.parseFloat(width) > 0 && borderStyle !== 'none')
+}
+
+/* Borderless controls the frame theme must still decorate as controls: the
+   settings rows' selector, stepper, and shortcut pills draw only a background
+   (language, permission, chat preference, enter behaviour, font size, and
+   shortcut rows), and ARIA switches draw no border at all. The pills resolve
+   through their CSS-modules export names; the switch check is structural, so
+   it also covers primitives bundled into the app shell stylesheet. */
+function createBorderlessControlProbe(document: Document): (target: HTMLElement) => boolean {
+  const pillClasses = new Set<string>()
+  for (const [moduleId, exportName] of [
+    ['@deepseek-ai/dsh-client-locale/LanguageRow.module.css', 'selector'],
+    ['@deepseek-ai/dsh-client-ui-permission-presets/PermissionRow.module.css', 'selector'],
+    ['@deepseek-ai/dsh-client-ui-chat/PreferenceRow.module.css', 'selector'],
+    ['@deepseek-ai/dsh-client-ui-conversation/EnterBehaviorRow.module.css', 'selector'],
+    ['@deepseek-ai/dsh-client-ui-shortcuts/Reference.module.css', 'button'],
+    ['@deepseek-ai/dsh-client-ui-theme/FontSizeRow.module.css', 'stepper'],
+  ] as const) {
+    const className = cssModuleClass(document, moduleId, exportName)
+    if (className) pillClasses.add(className)
+  }
+  return (target) => {
+    if (target.getAttribute('role') === 'switch') return true
+    for (const name of target.classList) {
+      if (pillClasses.has(name)) return true
+    }
+    return false
+  }
 }
 
 function closestBorderedAncestor(target: HTMLElement, pass: ScanPass): HTMLElement | null {
@@ -226,17 +259,18 @@ export function createFrameController(body: HTMLElement): FrameController {
       '@deepseek-ai/dsh-client-ui-settings-models/ModelsSection.module.css',
       'customized',
     )
+    const platformOverlayClass = cssModuleClass(
+      body.ownerDocument,
+      '@deepseek-ai/dsh-client-ui-settings-account/PlatformOverlay.module.css',
+      'overlay',
+    )
     const desired = new Map<HTMLElement, DesiredFrame>()
     const inputCardClass = cssModuleClass(
       body.ownerDocument,
       '@deepseek-ai/dsh-client-ui-conversation/InputBar.module.css',
       'card',
     )
-    const languageSelectorClass = cssModuleClass(
-      body.ownerDocument,
-      '@deepseek-ai/dsh-client-locale/LanguageRow.module.css',
-      'selector',
-    )
+    const isBorderlessControl = createBorderlessControlProbe(body.ownerDocument)
     for (const id of FRAME_IDS) {
       targets.get(id)?.forEach((target) => {
         desired.set(target, { frame: FRAME_VALUES[id] })
@@ -264,13 +298,10 @@ export function createFrameController(body: HTMLElement): FrameController {
         desired.set(target, { frame: existing })
         return
       }
-      if (
-        !target.hasAttribute('data-dsh-frame') &&
-        (hasRenderedBorder(target, pass.styleOf) ||
-          (languageSelectorClass && target.classList.contains(languageSelectorClass)))
-      ) {
+      const borderlessControl = isBorderlessControl(target)
+      if (!target.hasAttribute('data-dsh-frame') && (hasRenderedBorder(target, pass.styleOf) || borderlessControl)) {
         desired.set(target, {
-          frame: target.matches(INTERACTIVE_FRAME_SELECTOR) ? 'control' : 'surface',
+          frame: borderlessControl || target.matches(INTERACTIVE_FRAME_SELECTOR) ? 'control' : 'surface',
         })
       }
     })
@@ -282,6 +313,15 @@ export function createFrameController(body: HTMLElement): FrameController {
     if (customSettingsClass) {
       desired.forEach((_frame, target) => {
         if (target.parentElement?.closest(`.${customSettingsClass}`)) desired.delete(target)
+      })
+    }
+    /* The platform usage overlay is a full-viewport modal wrapping the
+       platform's own web content: its role="dialog" and bordered header would
+       otherwise draw the dialog frame across the whole window rim. The
+       platform page keeps its native chrome, like the trajectory view. */
+    if (platformOverlayClass) {
+      desired.forEach((_frame, target) => {
+        if (target.closest(`.${platformOverlayClass}`)) desired.delete(target)
       })
     }
     body.querySelectorAll<HTMLElement>('[data-dsh-frame], [data-dsh-message-role]').forEach((target) => {

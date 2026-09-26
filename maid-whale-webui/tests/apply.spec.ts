@@ -77,6 +77,19 @@ describe('DeepSeek cloud paper skin', () => {
     expect(document.title).toBe('DeepSeek 云鲸纸面')
   })
 
+  it('keeps the native window title and icon untouched inside the Desktop shell', async () => {
+    installMatchMedia(true)
+    vi.stubGlobal('dshDesktopBoot', {
+      ready: () => Promise.resolve({ injections: [], streamBaseUrl: 'http://127.0.0.1:19387' }),
+    })
+    document.title = 'DeepSeek Harness'
+    fiber = await mount()
+
+    expect(document.body.hasAttribute('data-dsh-deepseek-workshop')).toBe(true)
+    expect(document.head.querySelector('link[data-deepseek-workshop-icon]')).toBeNull()
+    expect(document.title).toBe('DeepSeek Harness')
+  })
+
   it('switches the backdrop theme without duplicating DOM', async () => {
     installMatchMedia(true)
     fiber = await mount()
@@ -108,7 +121,7 @@ describe('DeepSeek cloud paper skin', () => {
     expect(lightBackdrop).toContain('data:image/webp;base64,')
     expect(lightBackdrop).toContain('rgba(255, 254, 249, 0.6)')
     expect(document.body.style.getPropertyValue('background-position')).toBe(
-      'center center, calc(50% + 80px) calc(100% - 80px), center center, center center, center center',
+      'center center, center center, center center, center center, center center',
     )
     expect(lightDialog).toContain('data:image/webp;base64,')
     expect(lightMessage).toContain('data:image/webp;base64,')
