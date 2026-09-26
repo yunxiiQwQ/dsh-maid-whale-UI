@@ -8,23 +8,15 @@ A whale-maid theme plugin for the DeepSeek Harness desktop app and Web UI, featu
 
 ## Theme and Pet Preview
 
-Theme and settings screenshots were captured in DeepSeek Harness Desktop 0.1.7-rc.2.
+Theme screenshots were captured in DeepSeek Harness Desktop 0.1.7-rc.2.
 
 | Light mode | Dark mode |
 | --- | --- |
 | [![Light theme on an empty new-session page](preview/theme-light.png)](preview/theme-light.png) | [![Dark theme on an empty new-session page](preview/theme-dark.png)](preview/theme-dark.png) |
 
-### Settings Preview
-
-The settings panel uses a hand-drawn outer frame with standard controls inside.
-
-| Light settings | Dark settings |
-| --- | --- |
-| ![Light settings](preview/settings-light.png) | ![Dark settings](preview/settings-dark.png) |
-
 ### Pet Preview
 
-[<img src="preview/pet-working.png" alt="Cloud-whale companion working-state preview" width="480">](preview/pet-working.png)
+[<img src="preview/pet-working.png" alt="Cloud-whale companion thinking-state preview" width="303">](preview/pet-working.png)
 
 ## Installation
 

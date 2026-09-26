@@ -8,23 +8,15 @@
 
 ## 主题和 Pet 预览
 
-主题与设置页截图来自 DeepSeek Harness 桌面端 0.1.7-rc.2。
+主题截图来自 DeepSeek Harness 桌面端 0.1.7-rc.2。
 
 | 亮色模式 | 暗色模式 |
 | --- | --- |
 | [![无对话页面的亮色主题](maid-whale-webui/preview/theme-light.png)](maid-whale-webui/preview/theme-light.png) | [![无对话页面的暗色主题](maid-whale-webui/preview/theme-dark.png)](maid-whale-webui/preview/theme-dark.png) |
 
-### 设置页预览
-
-设置面板以手绘外框包围内容，内部使用原生控件。
-
-| 亮色设置 | 暗色设置 |
-| --- | --- |
-| ![亮色设置页](maid-whale-webui/preview/settings-light.png) | ![暗色设置页](maid-whale-webui/preview/settings-dark.png) |
-
 ### Pet 预览
 
-[<img src="maid-whale-webui/preview/pet-working.png" alt="鲸鱼桌宠工作状态预览" width="480">](maid-whale-webui/preview/pet-working.png)
+[<img src="maid-whale-webui/preview/pet-working.png" alt="鲸鱼桌宠思考状态预览" width="303">](maid-whale-webui/preview/pet-working.png)
 
 ## 安装说明
 
