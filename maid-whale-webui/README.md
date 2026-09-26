@@ -12,11 +12,11 @@
 
 | 亮色模式 | 暗色模式 |
 | --- | --- |
-| [![无对话页面的亮色主题](preview/theme-light.png)](preview/theme-light.png) | [![无对话页面的暗色主题](preview/theme-dark.png)](preview/theme-dark.png) |
+| [![无对话页面的亮色主题](preview/desktop-light.png)](preview/desktop-light.png) | [![无对话页面的暗色主题](preview/desktop-dark.png)](preview/desktop-dark.png) |
 
 ### Pet 预览
 
-[<img src="preview/pet-working.png" alt="鲸鱼桌宠思考状态预览" width="303">](preview/pet-working.png)
+[<img src="preview/pet-thinking.png" alt="鲸鱼桌宠思考状态预览" width="303">](preview/pet-thinking.png)
 
 ## 安装说明
 

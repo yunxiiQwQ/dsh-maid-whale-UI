@@ -12,11 +12,11 @@
 
 | 亮色模式 | 暗色模式 |
 | --- | --- |
-| [![无对话页面的亮色主题](maid-whale-webui/preview/theme-light.png)](maid-whale-webui/preview/theme-light.png) | [![无对话页面的暗色主题](maid-whale-webui/preview/theme-dark.png)](maid-whale-webui/preview/theme-dark.png) |
+| [![无对话页面的亮色主题](maid-whale-webui/preview/desktop-light.png)](maid-whale-webui/preview/desktop-light.png) | [![无对话页面的暗色主题](maid-whale-webui/preview/desktop-dark.png)](maid-whale-webui/preview/desktop-dark.png) |
 
 ### Pet 预览
 
-[<img src="maid-whale-webui/preview/pet-working.png" alt="鲸鱼桌宠思考状态预览" width="303">](maid-whale-webui/preview/pet-working.png)
+[<img src="maid-whale-webui/preview/pet-thinking.png" alt="鲸鱼桌宠思考状态预览" width="303">](maid-whale-webui/preview/pet-thinking.png)
 
 ## 安装说明
 

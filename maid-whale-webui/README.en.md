@@ -12,11 +12,11 @@ Theme screenshots were captured in DeepSeek Harness Desktop 0.1.7-rc.2.
 
 | Light mode | Dark mode |
 | --- | --- |
-| [![Light theme on an empty new-session page](preview/theme-light.png)](preview/theme-light.png) | [![Dark theme on an empty new-session page](preview/theme-dark.png)](preview/theme-dark.png) |
+| [![Light theme on an empty new-session page](preview/desktop-light.png)](preview/desktop-light.png) | [![Dark theme on an empty new-session page](preview/desktop-dark.png)](preview/desktop-dark.png) |
 
 ### Pet Preview
 
-[<img src="preview/pet-working.png" alt="Cloud-whale companion thinking-state preview" width="303">](preview/pet-working.png)
+[<img src="preview/pet-thinking.png" alt="Cloud-whale companion thinking-state preview" width="303">](preview/pet-thinking.png)
 
 ## Installation
 
