@@ -146,7 +146,7 @@ function related(left: HTMLElement, right: HTMLElement): boolean {
   return left === right || left.contains(right) || right.contains(left)
 }
 
-function hasRenderedBorder(target: HTMLElement, styleOf: StyleReader): boolean {
+function hasBorderOutline(target: HTMLElement, styleOf: StyleReader): boolean {
   const style = styleOf(target)
   if (!style) return false
   return [
@@ -154,7 +154,7 @@ function hasRenderedBorder(target: HTMLElement, styleOf: StyleReader): boolean {
     [style.borderRightWidth, style.borderRightStyle],
     [style.borderBottomWidth, style.borderBottomStyle],
     [style.borderLeftWidth, style.borderLeftStyle],
-  ].some(([width, borderStyle]) => Number.parseFloat(width) > 0 && borderStyle !== 'none')
+  ].every(([width, borderStyle]) => Number.parseFloat(width) > 0 && borderStyle !== 'none')
 }
 
 /* Borderless controls the frame theme must still decorate as controls: the
@@ -187,7 +187,7 @@ function createBorderlessControlProbe(document: Document): (target: HTMLElement)
 
 function closestBorderedAncestor(target: HTMLElement, pass: ScanPass): HTMLElement | null {
   for (let current = target.parentElement; current && current !== pass.body; current = current.parentElement) {
-    if (pass.isVisible(current) && hasRenderedBorder(current, pass.styleOf)) return current
+    if (pass.isVisible(current) && hasBorderOutline(current, pass.styleOf)) return current
   }
   return null
 }
@@ -289,6 +289,7 @@ export function createFrameController(body: HTMLElement): FrameController {
         !(target instanceof HTMLElement) ||
         desired.has(target) ||
         target.matches(FRAME_EXCLUSION_SELECTOR) ||
+        (target.matches('span, kbd') && !target.matches(INTERACTIVE_FRAME_SELECTOR)) ||
         pass.isForeignUi(target) ||
         !pass.isVisible(target)
       )
@@ -299,7 +300,7 @@ export function createFrameController(body: HTMLElement): FrameController {
         return
       }
       const borderlessControl = isBorderlessControl(target)
-      if (!target.hasAttribute('data-dsh-frame') && (hasRenderedBorder(target, pass.styleOf) || borderlessControl)) {
+      if (!target.hasAttribute('data-dsh-frame') && (hasBorderOutline(target, pass.styleOf) || borderlessControl)) {
         desired.set(target, {
           frame: borderlessControl || target.matches(INTERACTIVE_FRAME_SELECTOR) ? 'control' : 'surface',
         })

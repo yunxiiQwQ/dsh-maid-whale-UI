@@ -102,14 +102,14 @@ describe('frame controller', () => {
     expect(document.querySelector('body > button')?.getAttribute('data-dsh-frame')).toBe('primary-button')
   })
 
-  it('frames the native language row and selector', () => {
+  it('frames the language selector while preserving the row divider', () => {
     const style = document.createElement('style')
     style.dataset.pluginCss = '@deepseek-ai/dsh-client-locale/LanguageRow.module.css'
     style.textContent = '.locale_row{border-bottom:1px solid gray}.locale_selector{border:none}'
     document.head.append(style)
     document.body.innerHTML = '<div class="locale_row">语言<button class="locale_selector">中文</button></div>'
     controller = createFrameController(document.body)
-    expect(document.querySelector('.locale_row')?.getAttribute('data-dsh-frame')).toBe('surface')
+    expect(document.querySelector('.locale_row')?.hasAttribute('data-dsh-frame')).toBe(false)
     expect(document.querySelector('button')?.getAttribute('data-dsh-frame')).toBe('control')
   })
 
@@ -125,7 +125,7 @@ describe('frame controller', () => {
       </div>
     `
     controller = createFrameController(document.body)
-    expect(document.querySelector('.fontsize_row')?.getAttribute('data-dsh-frame')).toBe('surface')
+    expect(document.querySelector('.fontsize_row')?.hasAttribute('data-dsh-frame')).toBe(false)
     expect(document.querySelector('.fontsize_stepper')?.getAttribute('data-dsh-frame')).toBe('control')
     expect(document.querySelector('[role="switch"]')?.getAttribute('data-dsh-frame')).toBe('control')
     expect(document.querySelector('.fontsize_stepper > span')?.hasAttribute('data-dsh-frame')).toBe(false)
@@ -155,6 +155,21 @@ describe('frame controller', () => {
     expect(document.querySelector('.pref_selector')?.getAttribute('data-dsh-frame')).toBe('control')
     expect(document.querySelector('.enter_selector')?.getAttribute('data-dsh-frame')).toBe('control')
     expect(document.querySelector('.kbd_button')?.getAttribute('data-dsh-frame')).toBe('control')
+  })
+
+  it('preserves divider edges and inline badges across repeated scans', () => {
+    document.body.innerHTML = `
+      <header style="border-bottom:1px solid gray">Conversation</header>
+      <aside style="border-right:1px solid gray">Sidebar</aside>
+      <span style="border:1px solid gray">Preview</span>
+      <article style="border:1px solid gray">Paper panel</article>
+    `
+    controller = createFrameController(document.body)
+    controller.sync()
+    expect(document.querySelector('header')?.hasAttribute('data-dsh-frame')).toBe(false)
+    expect(document.querySelector('aside')?.hasAttribute('data-dsh-frame')).toBe(false)
+    expect(document.querySelector('span')?.hasAttribute('data-dsh-frame')).toBe(false)
+    expect(document.querySelector('article')?.dataset.dshFrame).toBe('surface')
   })
 
   /* The skin gives the sidebar workspace block a transparent border (the seam

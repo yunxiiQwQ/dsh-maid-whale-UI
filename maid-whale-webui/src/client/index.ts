@@ -1,11 +1,12 @@
 import type { Context } from '@deepseek-ai/cordis'
-import { MASCOT_ART, PAPER_BACKDROP_DARK, PAPER_BACKDROP_LIGHT } from './art.ts'
+import { MASCOT_ART, PAPER_BACKDROP_DARK, PAPER_BACKDROP_LIGHT, PAPER_GRAIN } from './art.ts'
 import { ILLUSTRATED_BACKGROUND, SIDEBAR_OCEAN_BACKGROUND } from './background-art.generated.ts'
 import { registerCompanionSettingsCard } from './companion-settings.ts'
 import { writeCompanionConfig } from './config-writes.ts'
 import css from './deepseek-workshop.module.css'
 import { createFrameController } from './frames.ts'
 import { createOrnamentController } from './ornaments.ts'
+import { cssModuleClass } from './scan.ts'
 
 const BODY_ATTR = 'data-dsh-deepseek-workshop'
 const SKIN_TITLE = 'DeepSeek 云鲸纸面'
@@ -17,6 +18,7 @@ const WIDE_QUERY = '(min-width: 960px)'
 const SIDEBAR_ATTR = 'data-dsh-sidebar-surface'
 const SIDEBAR_BACKGROUND_PROPERTY = '--dsw-sidebar-ocean-background'
 const BACKDROP_PROPERTIES = [
+  '--dsw-paper-grain',
   'background-image',
   'background-position',
   'background-size',
@@ -36,6 +38,7 @@ export function apply(ctx: Context): void {
   }
 
   body.setAttribute(BODY_ATTR, '')
+  body.style.setProperty('--dsw-paper-grain', PAPER_GRAIN)
 
   if (!isDesktopShell()) {
     const favicon = document.createElement('link')
@@ -115,6 +118,22 @@ export function apply(ctx: Context): void {
     void patchPetEnabled(!petEnabled)
   })
   const syncPetTogglePosition = (): void => {
+    const footerClass = cssModuleClass(
+      document,
+      '@deepseek-ai/dsh-client-ui-settings-general/SettingsRoot.module.css',
+      'triggerRow',
+    )
+    const footer = footerClass ? body.querySelector<HTMLElement>(`.${footerClass}`) : null
+    const footerBounds = footer?.getBoundingClientRect()
+    if (footer && footerBounds && footerBounds.width > 0 && footerBounds.height > 0) {
+      if (petToggle.parentElement !== footer) footer.append(petToggle)
+      petToggle.setAttribute('data-pet-docked', '')
+      petToggle.style.removeProperty('left')
+      petToggle.style.removeProperty('right')
+      return
+    }
+    if (petToggle.parentElement !== body) body.append(petToggle)
+    petToggle.removeAttribute('data-pet-docked')
     const bounds = sidebarSurface?.getBoundingClientRect()
     if (bounds && bounds.width > 0 && bounds.height > 0) {
       petToggle.style.left = `${Math.round(bounds.right - 54)}px`
@@ -144,14 +163,17 @@ export function apply(ctx: Context): void {
     const dark = body.hasAttribute('data-ds-dark-theme')
     const mode = dark ? 'dark' : 'light'
     const haze = dark
-      ? 'linear-gradient(rgba(18, 31, 47, 0.52), rgba(18, 31, 47, 0.52))'
-      : 'linear-gradient(rgba(255, 254, 249, 0.60), rgba(255, 254, 249, 0.60))'
+      ? 'linear-gradient(135deg, rgba(39, 56, 70, 0.64), rgba(46, 65, 79, 0.7) 52%, rgba(53, 75, 88, 0.66))'
+      : 'linear-gradient(135deg, rgba(250, 247, 238, 0.58), rgba(250, 247, 238, 0.66) 52%, rgba(237, 242, 235, 0.6))'
     const paper = dark ? PAPER_BACKDROP_DARK : PAPER_BACKDROP_LIGHT
-    body.style.setProperty('background-image', `${haze}, url("${ILLUSTRATED_BACKGROUND}"), ${paper}`)
-    body.style.setProperty('background-position', 'center, center, center, center, center')
-    body.style.setProperty('background-size', 'cover, cover, cover, cover, cover')
+    body.style.setProperty('background-image', `${PAPER_GRAIN}, ${haze}, url("${ILLUSTRATED_BACKGROUND}"), ${paper}`)
+    body.style.setProperty(
+      'background-position',
+      'left top, center, calc(50% + 140px) calc(50% - 60px), center, center, center',
+    )
+    body.style.setProperty('background-size', '192px 192px, cover, cover, cover, cover, cover')
     body.style.setProperty('background-attachment', 'fixed')
-    body.style.setProperty('background-repeat', 'no-repeat')
+    body.style.setProperty('background-repeat', 'repeat, no-repeat, no-repeat, no-repeat, no-repeat, no-repeat')
     ornaments.setMode(mode)
     frames.setMode(mode)
   }

@@ -2,9 +2,15 @@
 
 body[data-dsh-deepseek-workshop] {
   color: #243746;
-  background-color: #eef6f8;
-  background-blend-mode: normal, normal, soft-light, normal, normal;
+  background-color: #faf7ee;
+  background-blend-mode: normal, normal, multiply, normal, normal, normal;
   font-family: 'LXGW WenKai Screen', 'Microsoft YaHei UI', sans-serif;
+  --dsw-paper-wash: rgba(131, 182, 199, 0.12);
+  --dsw-paper-wash-edge: rgba(176, 196, 180, 0.08);
+  --dsw-paper-edge: rgba(77, 96, 104, 0.16);
+  --dsw-paper-highlight: rgba(255, 253, 243, 0.68);
+  --dsw-paper-shadow: 1px 2px 0 rgba(92, 110, 113, 0.12), 2px 5px 12px rgba(55, 75, 83, 0.08);
+  --dsw-paper-shadow-raised: 1px 3px 0 rgba(92, 110, 113, 0.14), 3px 9px 20px rgba(55, 75, 83, 0.12);
   --dsw-static-blue-50: #f2f8fa;
   --dsw-static-blue-100: #deeff4;
   --dsw-static-blue-300: #a8d1df;
@@ -38,12 +44,12 @@ body[data-dsh-deepseek-workshop] {
   --dsw-static-neutral-900: #2d4049;
   --dsw-static-neutral-1000: #243746;
   --dsw-alias-bg-base: rgba(251, 250, 245, 0.28);
-  --dsw-alias-bg-layer-1: rgba(247, 249, 246, 0.97);
-  --dsw-alias-bg-layer-2: rgba(239, 246, 247, 0.98);
-  --dsw-alias-bg-layer-3: rgba(230, 241, 244, 0.98);
+  --dsw-alias-bg-layer-1: rgba(250, 248, 240, 0.97);
+  --dsw-alias-bg-layer-2: rgba(241, 244, 236, 0.98);
+  --dsw-alias-bg-layer-3: rgba(231, 239, 234, 0.98);
   --dsw-alias-bg-mask-1: rgba(36, 55, 70, 0.42);
   --dsw-alias-bg-mask-2: rgba(36, 55, 70, 0.18);
-  --dsw-alias-bg-overlay: rgba(255, 254, 249, 0.99);
+  --dsw-alias-bg-overlay: #faf7ee;
   --dsw-alias-brand-primary: #5aa7d8;
   --dsw-alias-brand-primary-invert: #fffef9;
   --dsw-alias-brand-primary-new-colorprimary-new-color: #5aa7d8;
@@ -76,8 +82,8 @@ body[data-dsh-deepseek-workshop] {
   --dsw-specific-sidebar-nav-item-active: #e1f0f3;
   --dsw-specific-sidebar-nav-item-active-accent: #a8d1df;
   --dsw-specific-sidebar-nav-item-hover: #edf5f6;
-  --dsw-specific-menu: rgba(251, 250, 245, 0.99);
-  --dsw-specific-input-major: rgba(255, 255, 252, 0.98);
+  --dsw-specific-menu: #f8f6ed;
+  --dsw-specific-input-major: #fcf9f0;
   --dsw-specific-selector: rgba(235, 244, 246, 0.98);
   --dsw-specific-command-token: #3aaef0;
   --dsw-specific-app-shell: rgba(255, 254, 249, 0.2);
@@ -115,10 +121,21 @@ body[data-dsh-deepseek-workshop] [data-slot='conversation.view'] table :is(th, t
   padding: 12px 16px;
 }
 
+body[data-dsh-deepseek-workshop] [data-slot='conversation.view'] a {
+  color: var(--dsw-alias-brand-text);
+}
+
 body[data-dsh-deepseek-workshop][data-ds-dark-theme] {
   color: #e4edf2;
-  background-color: #172435;
-  --dsw-static-blue-50: #1c2d42;
+  background-color: #273846;
+  background-blend-mode: normal, normal, luminosity, normal, normal, normal;
+  --dsw-paper-wash: rgba(133, 174, 189, 0.1);
+  --dsw-paper-wash-edge: rgba(111, 150, 161, 0.07);
+  --dsw-paper-edge: rgba(143, 173, 186, 0.18);
+  --dsw-paper-highlight: rgba(181, 203, 211, 0.08);
+  --dsw-paper-shadow: 1px 2px 0 rgba(8, 18, 28, 0.34), 2px 5px 12px rgba(8, 18, 28, 0.18);
+  --dsw-paper-shadow-raised: 1px 3px 0 rgba(8, 18, 28, 0.4), 3px 9px 20px rgba(8, 18, 28, 0.28);
+  --dsw-static-blue-50: #2b4052;
   --dsw-static-blue-100: #263b53;
   --dsw-static-blue-300: #3f6380;
   --dsw-static-blue-400: #527e9d;
@@ -127,7 +144,7 @@ body[data-dsh-deepseek-workshop][data-ds-dark-theme] {
   --dsw-static-blue-600: #83bcdc;
   --dsw-static-blue-800: #b9d9ea;
   --dsw-static-blue-950: #e4edf2;
-  --dsw-static-deepseek-50: #1c2d42;
+  --dsw-static-deepseek-50: #2b4052;
   --dsw-static-deepseek-100: #263b53;
   --dsw-static-deepseek-200: #2e465f;
   --dsw-static-deepseek-300: #3f6380;
@@ -138,9 +155,9 @@ body[data-dsh-deepseek-workshop][data-ds-dark-theme] {
   --dsw-static-deepseek-700-delete: #98c9e2;
   --dsw-static-deepseek-800: #b9d9ea;
   --dsw-static-deepseek-900: #d1e6f0;
-  --dsw-static-neutral-00: #172435;
-  --dsw-static-neutral-50: #1c2d42;
-  --dsw-static-neutral-100: #22384f;
+  --dsw-static-neutral-00: #253746;
+  --dsw-static-neutral-50: #2b4052;
+  --dsw-static-neutral-100: #31495d;
   --dsw-static-neutral-200: #30485f;
   --dsw-static-neutral-300: #425c73;
   --dsw-static-neutral-400: #566f84;
@@ -150,13 +167,13 @@ body[data-dsh-deepseek-workshop][data-ds-dark-theme] {
   --dsw-static-neutral-800: #b9c8d2;
   --dsw-static-neutral-900: #d5e0e6;
   --dsw-static-neutral-1000: #e4edf2;
-  --dsw-alias-bg-base: rgba(23, 36, 53, 0.34);
-  --dsw-alias-bg-layer-1: rgba(28, 45, 66, 0.98);
-  --dsw-alias-bg-layer-2: rgba(34, 56, 79, 0.98);
-  --dsw-alias-bg-layer-3: rgba(41, 66, 91, 0.98);
-  --dsw-alias-bg-overlay: rgba(28, 45, 66, 0.99);
+  --dsw-alias-bg-base: rgba(37, 55, 70, 0.28);
+  --dsw-alias-bg-layer-1: rgba(44, 63, 77, 0.98);
+  --dsw-alias-bg-layer-2: rgba(51, 72, 86, 0.98);
+  --dsw-alias-bg-layer-3: rgba(59, 81, 94, 0.98);
+  --dsw-alias-bg-overlay: #2e414f;
   --dsw-alias-brand-primary: #83bcdc;
-  --dsw-alias-brand-primary-invert: #172435;
+  --dsw-alias-brand-primary-invert: #253746;
   --dsw-alias-brand-primary-new-colorprimary-new-color: #83bcdc;
   --dsw-alias-brand-text: #b9d9ea;
   --dsw-alias-label-primary: #e4edf2;
@@ -170,28 +187,28 @@ body[data-dsh-deepseek-workshop][data-ds-dark-theme] {
   --dsw-alias-button-primary-fill: #5f9fc5;
   --dsw-alias-button-primary-hover: #73afd1;
   --dsw-alias-button-primary-dimmed: #2d4c64;
-  --dsw-alias-button-elevated-fill: #22384f;
-  --dsw-alias-button-floating-fill: #1c2d42;
+  --dsw-alias-button-elevated-fill: #31495d;
+  --dsw-alias-button-floating-fill: #2b4052;
   --dsw-alias-button-floating-hover: #29435d;
   --dsw-alias-interactive-bg-hover: rgba(131, 188, 220, 0.1);
   --dsw-alias-interactive-bg-hover-accent: rgba(131, 188, 220, 0.16);
   --dsw-alias-interactive-bg-active: rgba(131, 188, 220, 0.18);
-  --dsw-alias-markdown-code-block: rgba(28, 45, 66, 0.98);
-  --dsw-alias-markdown-code-block-banner: rgba(34, 56, 79, 0.98);
-  --dsw-alias-markdown-inline-code: rgba(41, 66, 91, 0.96);
+  --dsw-alias-markdown-code-block: rgba(40, 59, 75, 0.98);
+  --dsw-alias-markdown-code-block-banner: rgba(46, 70, 87, 0.98);
+  --dsw-alias-markdown-inline-code: rgba(52, 79, 101, 0.96);
   --dsw-alias-scrollbar-bg-l1: #2f465c;
   --dsw-alias-scrollbar-hover-l1: #527e9d;
-  --dsw-specific-bubble: #29465f;
+  --dsw-specific-bubble: #35546c;
   --dsw-specific-bubble-highlight: #31536e;
-  --dsw-specific-sidebar-fill: rgba(28, 45, 66, 0.48);
-  --dsw-specific-sidebar-nav-item-active: #2b465f;
+  --dsw-specific-sidebar-fill: rgba(40, 59, 75, 0.4);
+  --dsw-specific-sidebar-nav-item-active: #36526a;
   --dsw-specific-sidebar-nav-item-active-accent: #527e9d;
-  --dsw-specific-sidebar-nav-item-hover: #253b53;
-  --dsw-specific-menu: rgba(34, 56, 79, 0.99);
-  --dsw-specific-input-major: rgba(23, 36, 53, 0.99);
-  --dsw-specific-selector: rgba(41, 66, 91, 0.98);
+  --dsw-specific-sidebar-nav-item-hover: #30495e;
+  --dsw-specific-menu: #344957;
+  --dsw-specific-input-major: #2c3f4d;
+  --dsw-specific-selector: rgba(52, 79, 101, 0.98);
   --dsw-specific-command-token: #7cc8f2;
-  --dsw-specific-app-shell: rgba(23, 36, 53, 0.2);
+  --dsw-specific-app-shell: rgba(37, 55, 70, 0.16);
 }
 
 body[data-dsh-deepseek-workshop] [role='tree'] {
@@ -200,17 +217,23 @@ body[data-dsh-deepseek-workshop] [role='tree'] {
 
 body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface] {
   background-image:
-    linear-gradient(rgba(247, 250, 249, 0.44), rgba(247, 250, 249, 0.44)), var(--dsw-sidebar-ocean-background);
+    var(--dsw-paper-grain), linear-gradient(rgba(245, 246, 236, 0.62), rgba(239, 244, 237, 0.58)),
+    var(--dsw-sidebar-ocean-background);
   background-position:
+    left top,
     center,
     center bottom;
-  background-size: cover, cover;
-  background-repeat: no-repeat;
+  background-size:
+    192px 192px,
+    cover,
+    cover;
+  background-repeat: repeat, no-repeat, no-repeat;
 }
 
 body[data-dsh-deepseek-workshop][data-ds-dark-theme] [data-dsh-sidebar-surface] {
   background-image:
-    linear-gradient(rgba(18, 31, 47, 0.58), rgba(18, 31, 47, 0.58)), var(--dsw-sidebar-ocean-background);
+    var(--dsw-paper-grain), linear-gradient(rgba(39, 56, 70, 0.7), rgba(46, 65, 79, 0.68)),
+    var(--dsw-sidebar-ocean-background);
 }
 
 body[data-dsh-deepseek-workshop] [role='treeitem'] {
@@ -227,6 +250,7 @@ body[data-dsh-deepseek-workshop] [role='treeitem']:hover {
 }
 
 body[data-dsh-deepseek-workshop] [role='treeitem'][aria-selected='true'] {
+  padding-inline-end: 28px;
   border-color: var(--dsw-alias-border-l1);
   background-color: var(--dsw-specific-sidebar-nav-item-active);
   box-shadow:
@@ -326,15 +350,16 @@ body[data-dsh-deepseek-workshop] [data-dsh-frame] {
   border-style: solid;
   border-color: var(--dsw-alias-border-l2);
   border-image-repeat: stretch;
-  border-image-slice: 70 95 70 110 fill;
-  border-image-width: 28px 38px 28px 44px;
-  border-image-outset: 8px 4px 8px 5px;
+  border-image-slice: 48 fill;
+  border-image-width: 14px;
+  border-image-outset: 0;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='selected-nav'] {
+  margin-block: 6px;
   border-image-source: var(--dsw-frame-selected-nav);
-  border-image-width: 21px 28.5px 21px 33px;
-  border-image-outset: 6px 3px 6px 4px;
+  border-image-width: 10px;
+  border-image-outset: 0;
 }
 
 body[data-dsh-deepseek-workshop] :is(textarea, [contenteditable='true'], input:not([type]))[data-dsh-frame='composer'] {
@@ -342,7 +367,7 @@ body[data-dsh-deepseek-workshop] :is(textarea, [contenteditable='true'], input:n
   border-color: var(--dsw-alias-border-l1);
   border-radius: 18px;
   border-image-source: none;
-  border-image-slice: 70 95 70 110 fill;
+  border-image-slice: 48 fill;
   border-image-width: 22px;
   border-image-outset: 0;
   background-color: var(--dsw-specific-input-major);
@@ -391,7 +416,8 @@ body[data-dsh-deepseek-workshop]
   [data-input-scroll]:has([data-input-backdrop])
   [data-dsh-frame='composer-shell']:not(:has([data-input-backdrop])) {
   background-color: transparent !important;
-  border-image-slice: 70 95 70 110;
+  background-image: none;
+  border-image-slice: 48;
 }
 
 body[data-dsh-deepseek-workshop]
@@ -407,81 +433,87 @@ body[data-dsh-deepseek-workshop] [data-dsh-frame='composer-shell'] [data-compose
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='composer-shell'] {
+  padding: 14px 6px 8px;
+  margin-block: 4px;
   border-width: 1px;
   border-color: transparent;
   border-image-source: var(--dsw-frame-composer);
-  border-image-slice: 70 95 70 110 fill;
-  border-image-width: 31.5px 42.75px 31.5px 49.5px;
-  border-image-outset: 10px 7px 10px 8px;
+  border-image-slice: 48 fill;
+  border-image-width: 16px;
+  border-image-outset: 0;
   border-radius: 18px 21px 17px 20px;
   background-color: var(--dsw-specific-input-major);
-  box-shadow: 0 12px 30px rgba(49, 93, 120, 0.12);
+  box-shadow: var(--dsw-paper-shadow);
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='dialog'] {
+  padding: 8px;
   border-image-source: var(--dsw-frame-dialog);
-  border-image-width: 28px 38px 28px 44px;
-  border-image-outset: 9px 5px 9px 6px;
+  border-image-width: 14px;
+  border-image-outset: 0;
   background-color: var(--dsw-alias-bg-overlay);
-  box-shadow: 0 25px 72px rgba(36, 55, 70, 0.22);
+  box-shadow: var(--dsw-paper-shadow-raised);
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='menu'] {
   border-image-source: var(--dsw-frame-menu);
-  border-image-width: 21px 28.5px 21px 33px;
-  border-image-outset: 7px 4px 6px 4px;
+  border-image-width: 10px;
+  border-image-outset: 0;
   background-color: var(--dsw-specific-menu);
-  box-shadow: 0 15px 36px rgba(36, 55, 70, 0.16);
+  box-shadow: var(--dsw-paper-shadow-raised);
+}
+
+body[data-dsh-deepseek-workshop] :is([role='menu'], [role='listbox'])[data-dsh-frame='menu'] {
+  padding: 8px;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='panel'] {
   border: 2px solid var(--dsw-alias-border-l2);
   border-image-source: var(--dsw-frame-panel);
-  border-image-slice: 70 95 70 110 fill;
-  border-image-width: 28px 38px 28px 44px;
-  border-image-outset: 9px 5px 9px 6px;
+  border-image-slice: 48 fill;
+  border-image-width: 14px;
+  border-image-outset: 0;
   border-radius: 19px 22px 18px 21px;
   background-color: var(--dsw-alias-bg-layer-1);
-  box-shadow: 5px 7px 24px rgba(49, 93, 120, 0.09);
+  box-shadow: var(--dsw-paper-shadow);
   padding-block: 14px !important;
   padding-inline: 24px !important;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='primary-button'] {
   border-image-source: var(--dsw-frame-primary-button);
-  border-image-slice: 70 95 70 110 fill;
-  border-image-width: 21px 28.5px 21px 33px;
-  border-image-outset: 6px 3px 6px 4px;
+  border-image-slice: 48 fill;
+  border-image-width: 10px;
+  border-image-outset: 0;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='control'] {
   border-image-source: var(--dsw-frame-primary-button);
-  border-image-slice: 70 95 70 110 fill;
-  border-image-width: 14px 19px 14px 22px;
-  border-image-outset: 4px 2px 4px 2px;
+  border-image-slice: 48 fill;
+  border-image-width: 7px;
+  border-image-outset: 0;
 }
 
-/* The workspace block is the sidebar's main surface. A transparent border lets
-   the frame controller claim it as a surface frame (the same mechanism that
-   frames the tree items). Rule order carries the border-image contract: the
-   border shorthand (lightningcss merges any border longhands back into it)
-   resets border-image to none, so this must sit BEFORE the surface frame rule
-   below — which wins the frame art back — and AFTER the base [data-dsh-frame]
-   rule above — so the border stays transparent instead of its l2 ink. Margins
-   keep the outset clear of the scrolling region edges that sit flush against
-   the block; padding keeps the header and tree content off the drawn strips. */
+/* The workspace border identifies the paper surface. Keep this shorthand
+   before the surface rule, since it resets border-image during CSS bundling. */
 body[data-dsh-deepseek-workshop] [data-slot='sidebar.workspaces'] > * {
   box-sizing: border-box;
   border: 2px solid transparent;
-  margin: 6px 6px 12px 2px;
-  padding: 8px 10px 8px 12px;
+  margin: 6px 14px 14px 2px;
+  padding: 12px 14px;
+}
+
+/* The host list extends into the sidebar gutter; stop it at the paper's
+   content edge so selected rows retain room inside the workspace frame. */
+body[data-dsh-deepseek-workshop] [data-slot='sidebar.workspaces'] [class$='_listArea'] {
+  margin-right: 0;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='surface'] {
   border-image-source: var(--dsw-frame-panel);
-  border-image-slice: 70 95 70 110 fill;
-  border-image-width: 21px 28.5px 21px 33px;
-  border-image-outset: 6px 3px 6px 4px;
+  border-image-slice: 48 fill;
+  border-image-width: 10px;
+  border-image-outset: 0;
 }
 
 body[data-dsh-deepseek-workshop] button[data-turn-process][data-dsh-frame='control'] {
@@ -491,19 +523,19 @@ body[data-dsh-deepseek-workshop] button[data-turn-process][data-dsh-frame='contr
 
 body[data-dsh-deepseek-workshop] [data-slot='conversation.session.header'] > [data-dsh-frame='surface'] {
   border-width: 1px;
-  border-image-width: 14px 19px 14px 22px;
+  border-image-width: 7px;
 }
 
 body[data-dsh-deepseek-workshop] [data-slot='sidebar.settings'] [role='dialog'][data-dsh-frame='dialog'] {
-  border-image-outset: 12px 8px 12px 9px;
+  border-image-outset: 0;
 }
 
 body[data-dsh-deepseek-workshop] [data-slot='sidebar.settings'] [data-dsh-frame='surface'] {
-  border-image-outset: 7px 4px 7px 5px;
+  border-image-outset: 0;
 }
 
 body[data-dsh-deepseek-workshop] [data-slot='sidebar.settings'] [data-dsh-frame='control'] {
-  border-image-outset: 5px 3px 5px 3px;
+  border-image-outset: 0;
 }
 
 body[data-dsh-deepseek-workshop] [data-slot='sidebar.settings'] [data-dsh-control-row] {
@@ -537,10 +569,10 @@ body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface]::after {
   position: absolute;
   inset-block: 0;
   right: 0;
-  width: 25.5px;
+  width: 10px;
   border-style: solid;
   border-width: 0 2px 0 0;
-  border-image: var(--dsw-frame-panel) 70 95 70 110 / 0 28.5px 0 0 / 0 3px 0 0 stretch;
+  border-image: var(--dsw-frame-panel) 48 / 0 10px 0 0 / 0 stretch;
   pointer-events: none;
 }
 
@@ -550,11 +582,7 @@ body[data-dsh-deepseek-workshop] [role='dialog'] [data-dsh-frame='panel'] {
   padding-inline: 16px;
 }
 
-/* The portaled settings dialog stacks general-item slot wrappers flush, so
-   consecutive row surface frames overlap their 6px outsets, and the rows
-   carry no horizontal padding, so row-anchored pill controls collide with
-   the row frame line. Space framed rows from their neighbours and the frame
-   edges, and widen the theme-cube gap past the control-frame outset. */
+/* Settings rows keep room between their content and the dialog edge. */
 body[data-dsh-deepseek-workshop] [role='dialog'] [data-slot='settings.general.item'] > [data-dsh-frame='surface'] {
   margin-block-end: 16px;
   padding-inline: 14px;
@@ -606,30 +634,63 @@ body[data-dsh-deepseek-workshop] [data-dsh-frame='message'] {
   border: 2px solid var(--dsw-alias-border-l2);
   border-color: transparent;
   border-image-source: var(--dsw-frame-message);
-  border-image-slice: 70 95 70 110 fill;
-  border-image-width: 30px;
-  border-image-outset: 12px 7px 12px 8px;
+  border-image-slice: 48 fill;
+  border-image-width: 14px;
+  border-image-outset: 0;
   background-clip: padding-box;
   overflow-wrap: anywhere;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='message'][data-dsh-message-role='user'] {
-  border-radius: 30px 33px 28px 32px;
+  border-radius: 14px 16px 13px 15px;
   background-color: var(--dsw-specific-bubble);
-  box-shadow: 3px 5px 16px rgba(49, 93, 120, 0.1);
+  box-shadow: none;
   padding: 10px 16px;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='message'][data-dsh-message-role='assistant'] {
   border-radius: 30px 34px 29px 33px;
   background-color: color-mix(in srgb, var(--dsw-alias-bg-layer-1) 88%, transparent);
-  box-shadow: 4px 6px 22px rgba(49, 93, 120, 0.1);
+  box-shadow: var(--dsw-paper-shadow);
   margin-block: 5px 11px;
   padding: 18px 21px 20px;
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-message-role='assistant'] > * {
   min-width: 0;
+}
+
+/* Grain stays in the painted background so text, selection and controls remain crisp. */
+body[data-dsh-deepseek-workshop]
+:is(
+  [data-dsh-frame='composer-shell'],
+  [data-dsh-frame='dialog'],
+  [data-dsh-frame='menu'],
+  [data-dsh-frame='panel'],
+  [data-dsh-frame='message'],
+  [data-slot='sidebar.workspaces'] > *
+) {
+  background-image:
+    var(--dsw-paper-grain), radial-gradient(ellipse at 2% 0%, var(--dsw-paper-wash), transparent 58%),
+    radial-gradient(ellipse at 100% 100%, var(--dsw-paper-wash-edge), transparent 48%);
+  background-size:
+    192px 192px,
+    100% 100%,
+    100% 100%;
+  background-repeat: repeat, no-repeat, no-repeat;
+}
+
+body[data-dsh-deepseek-workshop] [data-dsh-frame='composer-shell']:focus-within {
+  box-shadow:
+    inset 0 0 0 1px var(--dsw-paper-edge),
+    var(--dsw-paper-shadow-raised);
+}
+
+body[data-dsh-deepseek-workshop] [data-slot='sidebar.workspaces'] > * {
+  border-radius: 15px 19px 17px 14px;
+  box-shadow:
+    inset 1px 1px 0 var(--dsw-paper-highlight),
+    1px 2px 0 var(--dsw-paper-edge);
 }
 
 body[data-dsh-deepseek-workshop] [data-dsh-frame='primary-button']:focus-visible {
@@ -652,14 +713,18 @@ body[data-dsh-deepseek-workshop] .ornament {
   object-fit: contain;
   user-select: none;
   opacity: 0.94;
-  filter: drop-shadow(0 5px 8px rgba(49, 93, 120, 0.12));
+  filter: saturate(0.42) sepia(0.14) drop-shadow(1px 1px 0 rgba(49, 93, 120, 0.08));
+}
+
+body[data-dsh-deepseek-workshop][data-ds-dark-theme] .ornament {
+  filter: saturate(0.5) sepia(0.08) drop-shadow(1px 1px 0 rgba(49, 93, 120, 0.08));
 }
 
 body[data-dsh-deepseek-workshop] .ornamentBow {
-  top: calc(var(--dsw-y) - 12px);
-  left: calc(var(--dsw-x) + var(--dsw-w) - 13px);
-  width: 44px;
-  height: 58px;
+  top: calc(var(--dsw-y) - 15px);
+  left: calc(var(--dsw-x) + var(--dsw-w) - 32px);
+  width: 38px;
+  height: 42px;
   transform: rotate(5deg) scaleX(-1);
 }
 
@@ -672,11 +737,18 @@ body[data-dsh-deepseek-workshop] .ornamentWhaleTail {
 }
 
 body[data-dsh-deepseek-workshop] .ornamentApronCrest {
-  top: calc(var(--dsw-y) - 44px);
-  left: calc(var(--dsw-x) + var(--dsw-w) - 2px);
-  width: 88px;
-  height: 88px;
-  transform: rotate(2deg);
+  top: calc(var(--dsw-y) + var(--dsw-h) - 100px);
+  left: calc(var(--dsw-x) + 20px);
+  width: 80px;
+  height: 80px;
+}
+
+body[data-dsh-deepseek-workshop] .ornamentLayer:has(.ornamentApronCrest) {
+  z-index: 1001;
+}
+
+body[data-dsh-deepseek-workshop] .ornamentLayer:has(.ornamentApronCrest) .ornament:not(.ornamentApronCrest) {
+  visibility: hidden;
 }
 
 body[data-dsh-deepseek-workshop] .ornamentHairWave {
@@ -688,15 +760,15 @@ body[data-dsh-deepseek-workshop] .ornamentHairWave {
 }
 
 body[data-dsh-deepseek-workshop] .ornamentBubbles {
-  top: calc(var(--dsw-y) - 46px);
-  left: calc(var(--dsw-x) + var(--dsw-w) - 59px);
-  width: 64px;
-  height: 64px;
+  top: calc(var(--dsw-y) - 35px);
+  left: calc(var(--dsw-x) + var(--dsw-w) + 10px);
+  width: 48px;
+  height: 48px;
   transform: rotate(3deg);
 }
 
 body[data-dsh-deepseek-workshop] .ornamentHeadbandCorner {
-  top: calc(var(--dsw-y) - 31px);
+  top: max(4px, calc(var(--dsw-y) - 12px));
   left: calc(var(--dsw-x) + var(--dsw-w) - 51px);
   width: 70px;
   height: 82px;
@@ -704,15 +776,15 @@ body[data-dsh-deepseek-workshop] .ornamentHeadbandCorner {
 }
 
 body[data-dsh-deepseek-workshop] .ornamentRibbonTab {
-  top: calc(var(--dsw-y) - 33px);
-  left: calc(var(--dsw-x) + var(--dsw-w) - 91px);
-  width: 112px;
-  height: 58px;
+  top: calc(var(--dsw-y) - 40px);
+  left: calc(var(--dsw-x) + 8px);
+  width: 100px;
+  height: 46px;
   transform: rotate(-2deg);
 }
 
-/* Desktop-pet quick toggle; JS parks it at the workspace sidebar's bottom-right
-   corner (falling back to the viewport corner when no sidebar surface exists). */
+/* The pet toggle joins the account/update row when it is visible. The fixed
+   position is only the fallback for hosts without a visible settings footer. */
 body[data-dsh-deepseek-workshop] .petToggle {
   position: fixed;
   bottom: max(16px, env(safe-area-inset-bottom));
@@ -739,6 +811,26 @@ body[data-dsh-deepseek-workshop] .petToggle:hover {
   opacity: 1;
 }
 
+body[data-dsh-deepseek-workshop] .petToggle[data-pet-docked] {
+  position: static;
+  flex: 0 0 40px;
+  width: 40px;
+  height: 40px;
+  margin-inline-start: 4px;
+  box-shadow: none;
+}
+
+body[data-dsh-deepseek-workshop] [class$='_railRow']:has(> .petToggle[data-pet-docked]) {
+  flex-direction: column;
+}
+
+body[data-dsh-deepseek-workshop] [class$='_railRow'] > .petToggle[data-pet-docked] {
+  flex-basis: 36px;
+  width: 36px;
+  height: 36px;
+  margin-inline-start: 0;
+}
+
 body[data-dsh-deepseek-workshop] .petToggle[data-pet-on='off'] {
   border-color: var(--dsw-alias-border-l1);
   opacity: 0.5;
@@ -756,37 +848,38 @@ body[data-dsh-deepseek-workshop] .petToggleImage {
 @media (max-width: 959px) {
   body[data-dsh-deepseek-workshop] {
     background-position:
+      left top,
       center,
-      calc(50% + 80px) center,
+      calc(50% + 80px) calc(50% - 60px),
       center,
       center,
       center !important;
   }
 
   body[data-dsh-deepseek-workshop] [data-dsh-frame] {
-    border-image-width: 14px 19px 14px 22px;
-    border-image-outset: 1px;
+    border-image-width: 7px;
+    border-image-outset: 0;
   }
 
   body[data-dsh-deepseek-workshop] [data-dsh-frame='message'] {
-    border-image-width: 20px;
-    border-image-outset: 8px 4px 8px 5px;
+    border-image-width: 10px;
+    border-image-outset: 0;
   }
 
   body[data-dsh-deepseek-workshop] [data-dsh-frame='composer-shell'] {
     border-width: 1px;
-    border-image-width: 17.5px 23.75px 17.5px 27.5px;
+    border-image-width: 12px;
   }
 
   body[data-dsh-deepseek-workshop] [data-slot='conversation.session.header'] > [data-dsh-frame='surface'] {
     border-width: 1px;
-    border-image-width: 14px 19px 14px 22px;
+    border-image-width: 7px;
   }
 
   body[data-dsh-deepseek-workshop] [data-dsh-sidebar-surface]::after {
-    width: 18px;
-    border-image-width: 0 19px 0 0;
-    border-image-outset: 0 1px 0 0;
+    width: 7px;
+    border-image-width: 0 7px 0 0;
+    border-image-outset: 0;
   }
 
   body[data-dsh-deepseek-workshop]
