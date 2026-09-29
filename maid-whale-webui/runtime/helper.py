@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
 import os
 import random
 import sys
@@ -485,13 +484,7 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
             if self.reduced_motion:
                 self.micro_timer.stop()
                 return
-            intervals = {
-                "quiet": (24000, 48000),
-                "normal": (15000, 20000),
-                "lively": (7000, 16000),
-            }
-            lower, upper = intervals.get(self.activity_level, intervals["normal"])
-            self.micro_timer.start(random.randint(lower, upper))
+            self.micro_timer.start(10000)
 
         def _bubble_visible(self) -> bool:
             if self.bubble_mode == "hidden":
@@ -923,53 +916,6 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                 )
 
             pixmap = self.pixmaps[self.model.frame]
-            phase = time.monotonic()
-            motion = self.model.active_clip.motion
-            if self.reduced_motion:
-                motion = None
-            scale_extra = 1.0
-            angle = 0.0
-            offset_x = 0
-            offset_y = 0
-            clip_name = self.model.active_clip_name
-            if motion == "breathe":
-                # 缩放呼吸 + 极轻摇摆（无位移）：幅度收敛到几乎察觉不到的呼吸感
-                scale_extra = 1.0 + 0.005 * math.sin(phase * 2.5)
-                angle = math.sin(phase * 2.5) * 0.3
-            elif motion == "think":
-                offset_y = math.sin(phase * 2.8) * 1.5
-                angle = math.sin(phase * 1.3) * 0.4
-            elif motion == "work":
-                offset_x = math.sin(phase * 5.4) * 1.5
-                angle = math.sin(phase * 3.1) * 0.5
-            elif motion == "wait":
-                offset_y = math.sin(phase * 1.8) * 0.8
-                angle = math.sin(phase * 1.2) * 0.4
-            elif motion == "bounce":
-                offset_y = -abs(math.sin(phase * 5.2)) * 5
-                scale_extra = 1.0 + 0.012 * math.sin(phase * 5.2)
-            elif motion in {"shake", "dizzy"}:
-                offset_x = math.sin(phase * 11.0) * 2
-                angle = math.sin(phase * 11.0) * 0.8
-            elif motion == "float":
-                offset_y = math.sin(phase * 3.0) * 2
-                angle = math.sin(phase * 1.6) * 0.5
-            # Give walking clips a light bob and quick sway without changing frame timing.
-            if clip_name in ("working_search", "working_command"):
-                offset_y = -abs(math.sin(phase * 4.5)) * 3
-                angle = math.sin(phase * 9.0) * 1.2
-            # Per-clip render scale (manifest "scale"): the base idle pose reads
-            # slightly larger than the action poses, so clips can be trimmed
-            # without resampling their pixels.
-            scale_extra *= self.model.active_clip.scale
-            # Per-clip canvas-space nudge (manifest "offsetX"): corrects content
-            # asymmetry between poses; scales with the character.
-            offset_x += self.model.active_clip.offset_x
-
-            # Scale procedural offsets with the character while retaining subpixel motion.
-            offset_x = offset_x * self.scale
-            offset_y = offset_y * self.scale
-
             fade_alpha = 1.0
             if self.fade_from_pixmap is not None and not self.fade_from_pixmap.isNull():
                 fade_elapsed = time.monotonic() - self.fade_started
@@ -979,21 +925,10 @@ def run_visual(recorder: EventRecorder, snapshot_path: Path | None = None) -> in
                     self.fade_from_pixmap = None
 
             def draw_pet(pix: QPixmap, alpha: float) -> None:
-                base_width = pix.width() * self.scale
-                base_height = pix.height() * self.scale
-                pw = base_width * scale_extra
-                ph = base_height * scale_extra
-                x = self._pet_offset_x(base_width) + (base_width - pw) / 2 + offset_x
-                y = self.height() - ph - PET_BOTTOM_MARGIN + offset_y
-                if bubble_height > y:
-                    y = bubble_height
-                cx = x + pw / 2
-                cy = y + ph / 2
+                # Every pose and both sides of a crossfade use one fixed canvas.
+                x, y, pw, ph = self._pet_rect()
                 painter.save()
                 painter.setOpacity(alpha)
-                painter.translate(cx, cy)
-                painter.rotate(angle)
-                painter.translate(-cx, -cy)
                 painter.drawPixmap(QRectF(x, y, pw, ph), pix, QRectF(0, 0, pix.width(), pix.height()))
                 painter.restore()
 

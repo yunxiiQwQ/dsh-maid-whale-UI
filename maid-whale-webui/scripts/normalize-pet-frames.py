@@ -5,6 +5,7 @@ varies because detached action effects and captured divider lines distort the
 full alpha bounding box. The largest connected alpha component is the pet (and
 any attached prop), so it supplies a stable horizontal centre and ground line.
 Detached effects follow the same translation and are edge-clamped separately.
+The shipped action artwork uses visually calibrated head and ground anchors.
 """
 
 from __future__ import annotations

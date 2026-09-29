@@ -22,6 +22,8 @@ Desktop companion integration
 The desktop companion in `src/host/`, `src/index.ts`, `runtime/`, and
 `scripts/build-helper.ps1` is vendored from QCYTSN/dsh-dafeiyu (MIT License,
 https://github.com/QCYTSN/dsh-dafeiyu) and rebranded for this skin. The
-companion's animation artwork was fully replaced by the user's local
-`deepseek-drool` 20-action reference pack (transparent PNG cut-outs); none of
-the original dafeiyu character assets are redistributed here.
+companion's idle artwork is the first idle cell from the user's local
+`deepseek-drool` Codex spritesheet, preserved at its original pixel scale.
+The other 19 action poses were generated with OpenAI ImageGen using that
+idle cell as the character reference, then fitted to the companion canvas.
+None of the original dafeiyu character assets are redistributed here.

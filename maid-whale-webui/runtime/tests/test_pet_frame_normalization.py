@@ -5,7 +5,6 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
-from statistics import median
 
 from PIL import Image, ImageDraw
 
@@ -89,30 +88,16 @@ class PetFrameNormalizationTests(unittest.TestCase):
         self.assertEqual(bottom, 241)
         self.assertFalse(any(pixels[x, y][3] for y in (250, 251) for x in range(normalized.width)))
 
-    def test_shipped_frames_share_the_same_subject_anchor(self) -> None:
-        for path in sorted((ROOT / "assets" / "pet").glob("*.png")):
-            with self.subTest(frame=path.name):
-                image = Image.open(path).convert("RGBA")
-                components = [
-                    component
-                    for component in NORMALIZER.connected_components(image)
-                    if not NORMALIZER._is_divider_line(component, image.width)
-                ]
-                self.assertTrue(components)
-                left, _, right, bottom = components[0].bbox
-                self.assertAlmostEqual((left + right) / 2, NORMALIZER.TARGET_X, delta=0.5)
-                self.assertEqual(bottom, NORMALIZER.TARGET_BOTTOM)
-
-    def test_shipped_frames_match_the_dragging_character_scale(self) -> None:
-        pet_root = ROOT / "assets" / "pet"
-        heights = {}
-        for name in (*NORMALIZER.SCALE_CALIBRATION_FRAMES, NORMALIZER.DRAGGING_FRAME):
-            image = Image.open(pet_root / name).convert("RGBA")
-            _, top, _, bottom = NORMALIZER._subject(image).bbox
-            heights[name] = bottom - top
-
-        standing_height = median(heights[name] for name in NORMALIZER.SCALE_CALIBRATION_FRAMES)
-        self.assertAlmostEqual(standing_height, heights[NORMALIZER.DRAGGING_FRAME], delta=2)
+    def test_shipped_frames_use_one_canvas_without_clipping(self) -> None:
+        for path in sorted((ROOT / "assets/pet").glob("*.png")):
+            with self.subTest(frame=path.name), Image.open(path) as image:
+                self.assertEqual(image.size, (238, 260))
+                self.assertEqual(image.mode, "RGBA")
+                bounds = image.getchannel("A").point(lambda a: 255 if a > 32 else 0).getbbox()
+                self.assertGreaterEqual(bounds[0], 2)
+                self.assertGreaterEqual(bounds[1], 2)
+                self.assertLessEqual(bounds[2], image.width - 2)
+                self.assertLessEqual(bounds[3], image.height - 2)
 
 
 if __name__ == "__main__":
