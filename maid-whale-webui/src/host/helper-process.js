@@ -1,9 +1,10 @@
 import { execFileSync, spawn } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { dirname, resolve } from 'node:path'
 import { createInterface } from 'node:readline'
 import { CompanionMessageKind, createMessage, encodeMessage } from './protocol.js'
+import { lowIntegrityEnvironment } from './windows-helper-env.js'
 
 // Vendored from QCYTSN/dsh-dafeiyu (MIT). The DSH_DAFEIYU_* environment variable
 // names are the runtime contract read by runtime/helper.py; renaming them here
@@ -127,6 +128,14 @@ export class HelperProcess {
     this.heartbeatTimer = undefined
     this.startupTimer = undefined
     this.lastPongAt = 0
+    this.recoveryAttempted = false
+    this.recoveryEnv = undefined
+    this.diagnostic = { stderr: '' }
+    this.diagnosticPath =
+      options.diagnosticPath ??
+      (process.platform === 'win32' && !options.command && process.env.LOCALAPPDATA
+        ? resolve(process.env.LOCALAPPDATA, 'DSH', 'maid-whale-webui', 'helper-startup.json')
+        : undefined)
   }
 
   start() {
@@ -135,6 +144,9 @@ export class HelperProcess {
     // probing). Never let that escape: it would crash the host when it happens
     // inside the restart timer. Treat it like any other start failure instead.
     let child
+    let command
+    let env
+    let tempDirectoryFailed = false
     try {
       const headless = this.options.headless ?? process.env.DSH_DAFEIYU_HEADLESS === '1'
       const helperPath = this.options.helperPath || defaultHelperPath
@@ -146,7 +158,7 @@ export class HelperProcess {
         this.logger.info?.('companion helper is disabled on this platform')
         return undefined
       }
-      const command = launch.command
+      command = launch.command
       const args = this.options.args || launch.args
       const extraArgs = []
       const eventLog = this.options.eventLog || process.env.DSH_DAFEIYU_EVENT_LOG
@@ -155,9 +167,22 @@ export class HelperProcess {
       if (eventLog) extraArgs.push('--event-log', eventLog)
       if (snapshot) extraArgs.push('--snapshot', snapshot)
 
+      env = { ...process.env, ...this.options.env, ...launch.env }
+      // Recheck after a crash/restart: a replaced EXE may have a different label.
+      if (this.recoveryEnv) this.recoveryEnv = lowIntegrityEnvironment(command, env)
+      Object.assign(env, this.recoveryEnv)
+      this.#recordDiagnostic({
+        command,
+        startedAt: new Date().toISOString(),
+        temp: env.TMP || env.TEMP,
+        readyAt: undefined,
+        exitCode: undefined,
+        signal: undefined,
+        error: undefined,
+      })
       child = spawn(command, [...args, ...extraArgs], {
         cwd: this.options.cwd || packageRoot,
-        env: { ...process.env, ...this.options.env, ...launch.env },
+        env,
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
       })
@@ -165,6 +190,7 @@ export class HelperProcess {
       this.child = undefined
       this.spawned = false
       this.logger.error?.(`companion helper failed to start: ${error.message}`)
+      this.#recordDiagnostic({ error: error.message })
       if (!this.stopping && !this.restartSuppressed) {
         this.#countStartFailure(`launch error: ${error.message}`)
       }
@@ -184,6 +210,7 @@ export class HelperProcess {
       this.startupTimer = setTimeout(() => {
         if (this.child === child && !this.spawned) {
           this.logger.warn?.('companion helper readiness timed out')
+          this.#recordDiagnostic({ error: 'readiness timed out' })
           child.kill()
         }
       }, startupTimeoutMs)
@@ -191,6 +218,7 @@ export class HelperProcess {
     })
     child.once('error', (error) => {
       this.logger.error?.(`companion helper failed to start: ${error.message}`)
+      this.#recordDiagnostic({ error: error.message })
       if (this.child !== child) return
       this.child = undefined
       this.spawned = false
@@ -200,15 +228,33 @@ export class HelperProcess {
         this.#countStartFailure(`spawn error: ${error.message}`)
       }
     })
-    child.once('exit', (code, signal) => {
+    // close follows stderr EOF, so even a fast bootloader failure is available
+    // before deciding whether to retry with the Low-integrity environment.
+    child.once('close', (code, signal) => {
       if (this.child !== child) return
       this.child = undefined
       const wasReady = this.spawned
       this.spawned = false
       this.#clearHeartbeat()
       this.#clearStartupTimer()
+      this.#recordDiagnostic({ exitCode: code, signal })
       if (!this.stopping && !this.restartSuppressed) {
         if (!wasReady) {
+          if (process.platform === 'win32' && tempDirectoryFailed && !this.recoveryAttempted) {
+            this.recoveryAttempted = true
+            try {
+              this.recoveryEnv = lowIntegrityEnvironment(command, env)
+              if (this.recoveryEnv) {
+                this.#recordDiagnostic({ recovery: 'low-integrity-temp' })
+                this.logger.info?.('companion helper has a Low integrity label; retrying with LocalLow storage')
+                this.#scheduleRestart()
+                return
+              }
+            } catch (error) {
+              this.#recordDiagnostic({ recoveryError: error.message })
+              this.logger.warn?.(`companion helper integrity check failed: ${error.message}`)
+            }
+          }
           // The helper never became ready during this attempt (crashed before
           // READY or timed out). Count it as a failed start so a broken
           // helper cannot restart forever.
@@ -222,6 +268,10 @@ export class HelperProcess {
     createInterface({ input: child.stdout }).on('line', (line) => this.#handleReply(line))
     createInterface({ input: child.stderr }).on('line', (line) => {
       if (line.trim()) this.logger.warn?.(`companion helper: ${line}`)
+      if (!this.spawned) {
+        tempDirectoryFailed ||= /\[PYI-\d+:ERROR\] Could not create temporary directory!/.test(line)
+        this.#recordDiagnostic({ stderr: `${this.diagnostic.stderr}${line}\n`.slice(-4096) })
+      }
     })
     return child
   }
@@ -243,6 +293,17 @@ export class HelperProcess {
       return
     }
     this.child.stdin.write(line)
+  }
+
+  #recordDiagnostic(fields) {
+    Object.assign(this.diagnostic, fields)
+    if (!this.diagnosticPath) return
+    try {
+      mkdirSync(dirname(this.diagnosticPath), { recursive: true })
+      writeFileSync(this.diagnosticPath, `${JSON.stringify(this.diagnostic, null, 2)}\n`)
+    } catch (error) {
+      this.logger.warn?.(`companion helper diagnostic could not be saved: ${error.message}`)
+    }
   }
 
   stop(reason = 'plugin-disposed') {
@@ -290,6 +351,7 @@ export class HelperProcess {
       if (reply?.protocolVersion === 1 && reply.kind === CompanionMessageKind.READY) {
         if (this.spawned) return
         this.spawned = true
+        this.#recordDiagnostic({ readyAt: new Date().toISOString(), exitCode: undefined, signal: undefined })
         this.startFailures = 0
         this.lastPongAt = Date.now()
         this.#clearStartupTimer()

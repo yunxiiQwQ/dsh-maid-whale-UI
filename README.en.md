@@ -61,6 +61,10 @@ dsh --profile web
 
 The theme applies automatically and the companion appears when DSH starts. If the companion is missing, check **Settings → Plugins → Plugin config → Cloud-whale companion**. The whale button at the bottom-right of the workspace panel also toggles it immediately. Only one UI theme should be enabled at a time.
 
+On Windows, if a Low integrity label prevents the helper from creating its temporary directory, the plugin checks the label and retries using `%USERPROFILE%\AppData\LocalLow\DSH\maid-whale-webui` for temporary files and layout storage. An explicit `DSH_DAFEIYU_LAYOUT_PATH` takes precedence and must be writable by a Low integrity process.
+
+Startup diagnostics are saved to `%LOCALAPPDATA%\DSH\maid-whale-webui\helper-startup.json`, overwritten each time the companion is enabled. They include the executable path, startup time, ready status, exit code, and up to 4096 characters of startup stderr. Attach this file when reporting startup failures; it contains local paths, so you can redact your username before sharing.
+
 ### Update and uninstall
 
 ```powershell

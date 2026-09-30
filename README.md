@@ -61,6 +61,10 @@ dsh --profile web
 
 主题会在启动后自动应用，桌宠也会自动出现。若桌宠未显示，请前往 **设置 → 插件 → 插件配置 → 鲸鱼桌宠** 检查启用开关。工作区面板右下角的鲸鱼按钮也可即时启停桌宠；同一时间建议只启用一个界面主题。
 
+Windows 下，若 helper 因 Low 完整性标签无法创建临时目录，插件会检测标签并自动使用 `%USERPROFILE%\AppData\LocalLow\DSH\maid-whale-webui` 重试；该目录也用于保存桌宠布局。显式配置的 `DSH_DAFEIYU_LAYOUT_PATH` 仍优先使用，需指向 Low 进程可写的位置。
+
+启动诊断保存在 `%LOCALAPPDATA%\DSH\maid-whale-webui\helper-startup.json`，每次启用桌宠时覆盖，记录程序路径、启动时间、ready 状态、退出码及最多 4096 字符的启动 stderr。排查启动失败时可将该文件附到 issue；其中包含本机路径，分享前可遮盖用户名。
+
 ### 更新与卸载
 
 ```powershell

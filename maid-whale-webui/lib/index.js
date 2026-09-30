@@ -1,7 +1,7 @@
 import { execFileSync, spawn } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { createInterface } from "node:readline";
 //#region node_modules/.pnpm/@deepseek-ai+cosmokit@1.8.2/node_modules/@deepseek-ai/cosmokit/lib/index.js
 /** Return true when a value is `null` or `undefined`. */
@@ -1425,6 +1425,81 @@ var CompanionReducer = class {
 	}
 };
 //#endregion
+//#region src/host/windows-helper-env.js
+const inspectLabel = `
+$ErrorActionPreference = 'Stop'
+[Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
+Add-Type -TypeDefinition @'
+using System;
+using System.ComponentModel;
+using System.Runtime.InteropServices;
+public static class HelperIntegrity {
+  [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
+  static extern uint GetNamedSecurityInfoW(string name, int type, uint info,
+    out IntPtr owner, out IntPtr group, out IntPtr dacl, out IntPtr sacl, out IntPtr descriptor);
+  [DllImport("advapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+  static extern bool ConvertSecurityDescriptorToStringSecurityDescriptorW(
+    IntPtr descriptor, uint revision, uint info, out IntPtr text, out uint length);
+  [DllImport("kernel32.dll")]
+  static extern IntPtr LocalFree(IntPtr memory);
+  [DllImport("shell32.dll")]
+  static extern int SHGetKnownFolderPath(ref Guid folder, uint flags, IntPtr token, out IntPtr path);
+  public static string LowDirectory(string executable) {
+    IntPtr owner, group, dacl, sacl, descriptor, text;
+    uint status = GetNamedSecurityInfoW(executable, 1, 0x10, out owner, out group, out dacl, out sacl, out descriptor);
+    if (status != 0) throw new Win32Exception((int)status);
+    string label;
+    try {
+      uint length;
+      if (!ConvertSecurityDescriptorToStringSecurityDescriptorW(descriptor, 1, 0x10, out text, out length))
+        throw new Win32Exception(Marshal.GetLastWin32Error());
+      try { label = Marshal.PtrToStringUni(text); }
+      finally { LocalFree(text); }
+    } finally { LocalFree(descriptor); }
+    if (!label.Contains(";;;LW)")) return null;
+    Guid folder = new Guid("A520A1A4-1780-4FF6-BD18-167343C5AF16");
+    IntPtr path;
+    Marshal.ThrowExceptionForHR(SHGetKnownFolderPath(ref folder, 0, IntPtr.Zero, out path));
+    try { return Marshal.PtrToStringUni(path); }
+    finally { Marshal.FreeCoTaskMem(path); }
+  }
+}
+'@
+[HelperIntegrity]::LowDirectory($env:DSH_HELPER_INSPECT_PATH) | ConvertTo-Json -Compress
+`;
+function lowIntegrityEnvironment(executable, env) {
+	const output = execFileSync(join(process.env.SystemRoot || "C:\\Windows", "System32/WindowsPowerShell/v1.0/powershell.exe"), [
+		"-NoLogo",
+		"-NoProfile",
+		"-NonInteractive",
+		"-Command",
+		inspectLabel
+	], {
+		env: {
+			...process.env,
+			DSH_HELPER_INSPECT_PATH: executable
+		},
+		encoding: "utf8",
+		windowsHide: true,
+		timeout: 1e4,
+		stdio: [
+			"ignore",
+			"pipe",
+			"pipe"
+		]
+	}).trim();
+	const localLow = output ? JSON.parse(output) : null;
+	if (!localLow) return void 0;
+	const directory = join(localLow, "DSH", "maid-whale-webui");
+	const temp = join(directory, "temp");
+	mkdirSync(temp, { recursive: true });
+	return {
+		TMP: temp,
+		TEMP: temp,
+		DSH_DAFEIYU_LAYOUT_PATH: env.DSH_DAFEIYU_LAYOUT_PATH || join(directory, "layout.json")
+	};
+}
+//#endregion
 //#region src/host/helper-process.js
 const here = dirname(fileURLToPath(import.meta.url));
 const packageRoot = [resolve(here, ".."), resolve(here, "..", "..")].find((root) => existsSync(resolve(root, "runtime", "helper.py"))) ?? resolve(here, "..");
@@ -1517,10 +1592,17 @@ var HelperProcess = class {
 		this.heartbeatTimer = void 0;
 		this.startupTimer = void 0;
 		this.lastPongAt = 0;
+		this.recoveryAttempted = false;
+		this.recoveryEnv = void 0;
+		this.diagnostic = { stderr: "" };
+		this.diagnosticPath = options.diagnosticPath ?? (process.platform === "win32" && !options.command && process.env.LOCALAPPDATA ? resolve(process.env.LOCALAPPDATA, "DSH", "maid-whale-webui", "helper-startup.json") : void 0);
 	}
 	start() {
 		if (this.child || this.stopping || this.restartSuppressed) return this.child;
 		let child;
+		let command;
+		let env;
+		let tempDirectoryFailed = false;
 		try {
 			const headless = this.options.headless ?? process.env.DSH_DAFEIYU_HEADLESS === "1";
 			const helperPath = this.options.helperPath || defaultHelperPath;
@@ -1533,7 +1615,7 @@ var HelperProcess = class {
 				this.logger.info?.("companion helper is disabled on this platform");
 				return;
 			}
-			const command = launch.command;
+			command = launch.command;
 			const args = this.options.args || launch.args;
 			const extraArgs = [];
 			const eventLog = this.options.eventLog || process.env.DSH_DAFEIYU_EVENT_LOG;
@@ -1541,13 +1623,25 @@ var HelperProcess = class {
 			if (headless) extraArgs.push("--headless");
 			if (eventLog) extraArgs.push("--event-log", eventLog);
 			if (snapshot) extraArgs.push("--snapshot", snapshot);
+			env = {
+				...process.env,
+				...this.options.env,
+				...launch.env
+			};
+			if (this.recoveryEnv) this.recoveryEnv = lowIntegrityEnvironment(command, env);
+			Object.assign(env, this.recoveryEnv);
+			this.#recordDiagnostic({
+				command,
+				startedAt: (/* @__PURE__ */ new Date()).toISOString(),
+				temp: env.TMP || env.TEMP,
+				readyAt: void 0,
+				exitCode: void 0,
+				signal: void 0,
+				error: void 0
+			});
 			child = spawn(command, [...args, ...extraArgs], {
 				cwd: this.options.cwd || packageRoot,
-				env: {
-					...process.env,
-					...this.options.env,
-					...launch.env
-				},
+				env,
 				stdio: [
 					"pipe",
 					"pipe",
@@ -1559,6 +1653,7 @@ var HelperProcess = class {
 			this.child = void 0;
 			this.spawned = false;
 			this.logger.error?.(`companion helper failed to start: ${error.message}`);
+			this.#recordDiagnostic({ error: error.message });
 			if (!this.stopping && !this.restartSuppressed) this.#countStartFailure(`launch error: ${error.message}`);
 			return;
 		}
@@ -1574,6 +1669,7 @@ var HelperProcess = class {
 			this.startupTimer = setTimeout(() => {
 				if (this.child === child && !this.spawned) {
 					this.logger.warn?.("companion helper readiness timed out");
+					this.#recordDiagnostic({ error: "readiness timed out" });
 					child.kill();
 				}
 			}, startupTimeoutMs);
@@ -1581,6 +1677,7 @@ var HelperProcess = class {
 		});
 		child.once("error", (error) => {
 			this.logger.error?.(`companion helper failed to start: ${error.message}`);
+			this.#recordDiagnostic({ error: error.message });
 			if (this.child !== child) return;
 			this.child = void 0;
 			this.spawned = false;
@@ -1588,15 +1685,34 @@ var HelperProcess = class {
 			this.#clearStartupTimer();
 			if (!this.stopping && !this.restartSuppressed) this.#countStartFailure(`spawn error: ${error.message}`);
 		});
-		child.once("exit", (code, signal) => {
+		child.once("close", (code, signal) => {
 			if (this.child !== child) return;
 			this.child = void 0;
 			const wasReady = this.spawned;
 			this.spawned = false;
 			this.#clearHeartbeat();
 			this.#clearStartupTimer();
+			this.#recordDiagnostic({
+				exitCode: code,
+				signal
+			});
 			if (!this.stopping && !this.restartSuppressed) {
 				if (!wasReady) {
+					if (process.platform === "win32" && tempDirectoryFailed && !this.recoveryAttempted) {
+						this.recoveryAttempted = true;
+						try {
+							this.recoveryEnv = lowIntegrityEnvironment(command, env);
+							if (this.recoveryEnv) {
+								this.#recordDiagnostic({ recovery: "low-integrity-temp" });
+								this.logger.info?.("companion helper has a Low integrity label; retrying with LocalLow storage");
+								this.#scheduleRestart();
+								return;
+							}
+						} catch (error) {
+							this.#recordDiagnostic({ recoveryError: error.message });
+							this.logger.warn?.(`companion helper integrity check failed: ${error.message}`);
+						}
+					}
 					this.#countStartFailure(`exited before ready (code=${String(code)}, signal=${String(signal)})`);
 					return;
 				}
@@ -1607,6 +1723,10 @@ var HelperProcess = class {
 		createInterface({ input: child.stdout }).on("line", (line) => this.#handleReply(line));
 		createInterface({ input: child.stderr }).on("line", (line) => {
 			if (line.trim()) this.logger.warn?.(`companion helper: ${line}`);
+			if (!this.spawned) {
+				tempDirectoryFailed ||= /\[PYI-\d+:ERROR\] Could not create temporary directory!/.test(line);
+				this.#recordDiagnostic({ stderr: `${this.diagnostic.stderr}${line}\n`.slice(-4096) });
+			}
 		});
 		return child;
 	}
@@ -1621,6 +1741,16 @@ var HelperProcess = class {
 			return;
 		}
 		this.child.stdin.write(line);
+	}
+	#recordDiagnostic(fields) {
+		Object.assign(this.diagnostic, fields);
+		if (!this.diagnosticPath) return;
+		try {
+			mkdirSync(dirname(this.diagnosticPath), { recursive: true });
+			writeFileSync(this.diagnosticPath, `${JSON.stringify(this.diagnostic, null, 2)}\n`);
+		} catch (error) {
+			this.logger.warn?.(`companion helper diagnostic could not be saved: ${error.message}`);
+		}
 	}
 	stop(reason = "plugin-disposed") {
 		this.stopping = true;
@@ -1659,6 +1789,11 @@ var HelperProcess = class {
 			if (reply?.protocolVersion === 1 && reply.kind === CompanionMessageKind.READY) {
 				if (this.spawned) return;
 				this.spawned = true;
+				this.#recordDiagnostic({
+					readyAt: (/* @__PURE__ */ new Date()).toISOString(),
+					exitCode: void 0,
+					signal: void 0
+				});
 				this.startFailures = 0;
 				this.lastPongAt = Date.now();
 				this.#clearStartupTimer();

@@ -1,10 +1,11 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { HelperProcess, isWsl, resolveHelperLaunch } from '../src/host/helper-process.js'
+import { bundledHelperPath, HelperProcess, isWsl, resolveHelperLaunch } from '../src/host/helper-process.js'
 import { CompanionMessageKind, CompanionState, createMessage } from '../src/host/protocol.js'
+import { lowIntegrityEnvironment } from '../src/host/windows-helper-env.js'
 
 const fakeNodeHelper = [
   "const readline = require('node:readline')",
@@ -23,6 +24,96 @@ async function waitFor(predicate: () => boolean, timeoutMs = 8000): Promise<void
   }
   throw new Error('timed out waiting for helper condition')
 }
+
+describe('Windows Low integrity helper recovery', () => {
+  it.skipIf(process.platform !== 'win32')(
+    'starts the packaged renderer and saves layout with its Low label intact',
+    async () => {
+      // LocalLow propagates its Low label to this disposable copy of the real EXE.
+      const directory = mkdtempSync(join(process.env.USERPROFILE!, "AppData/LocalLow/dsh-helper-test-鲸鱼'&-"))
+      const executable = join(directory, 'helper.exe')
+      const snapshot = join(directory, 'snapshot.png')
+      const layout = join(directory, 'layout.json')
+      const diagnosticPath = join(directory, 'startup.json')
+      copyFileSync(bundledHelperPath, executable)
+      const warnings: string[] = []
+      const helper = new HelperProcess(
+        {
+          command: executable,
+          args: [],
+          snapshot,
+          diagnosticPath,
+          env: { DSH_DAFEIYU_LAYOUT_PATH: layout },
+          restartDelayMs: 10,
+          heartbeatMs: 0,
+          maxStartFailures: 1,
+        },
+        {
+          ...console,
+          info() {},
+          warn: (line: string) => warnings.push(line),
+          error: (line: string) => warnings.push(line),
+        },
+      )
+      try {
+        helper.start()
+        helper.send(createMessage(CompanionMessageKind.CONFIG, { scale: 0.7 }))
+        await waitFor(() => helper.spawned && existsSync(snapshot), 20000).catch((error) => {
+          throw new Error(`${error.message}\n${warnings.join('\n')}\n${readFileSync(diagnosticPath, 'utf8')}`)
+        })
+        expect(warnings.join('\n')).toContain('Could not create temporary directory!')
+        helper.stop()
+        await waitFor(() => !helper.child)
+        expect(JSON.parse(readFileSync(layout, 'utf8')).scale).toBe(0.7)
+        const diagnostic = JSON.parse(readFileSync(diagnosticPath, 'utf8'))
+        expect(diagnostic.readyAt).toBeTruthy()
+        expect(diagnostic.exitCode).toBe(0)
+        expect(diagnostic.recovery).toBe('low-integrity-temp')
+        expect(diagnostic.stderr).toContain('Could not create temporary directory!')
+        // The identical EXE still fails with the original medium-integrity TEMP.
+        const originalEnv = spawnSync(executable, ['--headless'], { encoding: 'utf8', timeout: 10000 })
+        expect(originalEnv.stderr).toContain('Could not create temporary directory!')
+      } finally {
+        helper.stop()
+        if (helper.child) {
+          helper.child.kill()
+          await waitFor(() => !helper.child)
+        }
+        rmSync(directory, { recursive: true, force: true })
+      }
+    },
+    35000,
+  )
+
+  it('records a failed start with stderr and exit code', async () => {
+    const directory = mkdtempSync(join(tmpdir(), 'dsh-helper-diagnostic-'))
+    const diagnosticPath = resolve(directory, 'startup.json')
+    const helper = new HelperProcess(
+      {
+        command: process.execPath,
+        args: ['-e', 'process.stderr.write("startup fixture failed\\n"); process.exitCode = 7'],
+        diagnosticPath,
+        maxStartFailures: 1,
+      },
+      { ...console, warn() {}, error() {} },
+    )
+    try {
+      helper.start()
+      await waitFor(() => helper.restartSuppressed)
+      const diagnostic = JSON.parse(readFileSync(diagnosticPath, 'utf8'))
+      expect(diagnostic.stderr).toContain('startup fixture failed')
+      expect(diagnostic.exitCode).toBe(7)
+      expect(diagnostic.readyAt).toBeUndefined()
+    } finally {
+      helper.stop()
+      rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it.skipIf(process.platform !== 'win32')('keeps ordinary executables on their existing temporary directory', () => {
+    expect(lowIntegrityEnvironment(process.execPath, process.env)).toBeUndefined()
+  })
+})
 
 describe('helper process launch resolution', () => {
   it('detects WSL without throwing', () => {
