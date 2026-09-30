@@ -62,14 +62,14 @@
     "@types/node": "^26.2.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "18.3.7",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "4.1.11",
     "jsdom": "29.1.1",
     "lightningcss": "^1.32.0",
     "react": "^18.3.1",
     "react-dom": "18.3.1",
     "tsdown": "^0.22.2",
     "typescript": "^5.9.3",
-    "vitest": "^4.1.8",
+    "vitest": "^4.1.11",
     "yaml": "2.9.0"
   },
   "files": [

@@ -42,8 +42,9 @@ async function request(
     method = 'GET',
     body = '',
     address = '127.0.0.1',
+    host = '127.0.0.1:2026',
     origin,
-  }: { method?: string; body?: string; address?: string; origin?: string } = {},
+  }: { method?: string; body?: string; address?: string; host?: string; origin?: string } = {},
 ): Promise<HandlerResult> {
   const req = Readable.from(body ? [Buffer.from(body)] : []) as Readable & {
     method: string
@@ -52,7 +53,7 @@ async function request(
   }
   req.method = method
   req.socket = { remoteAddress: address }
-  req.headers = { host: '127.0.0.1:2026', ...(origin ? { origin } : {}) }
+  req.headers = { host, ...(origin ? { origin } : {}) }
   let status: number | undefined
   let payload = ''
   const res = {
@@ -68,6 +69,34 @@ async function request(
 }
 
 describe('companion local config endpoint', () => {
+  it.each(['audit.invalid:2026', 'localhost.audit.invalid:2026', 'audit.invalid@localhost:2026', ''])(
+    'rejects untrusted Host %s even without an Origin',
+    async (host) => {
+      const settings = settingsFixture()
+      const handler = createConfigHandler(settings)
+      expect((await request(handler, { host })).status).toBe(403)
+      const result = await request(handler, {
+        host,
+        origin: `http://${host}`,
+        method: 'PATCH',
+        body: '{"enabled":false}',
+      })
+      expect(result.status).toBe(403)
+      expect(settings.get().enabled).toBe(true)
+    },
+  )
+
+  it.each(['localhost:2026', '127.0.0.1:2026', '[::1]:2026'])('accepts loopback Host %s', async (host) => {
+    const result = await request(createConfigHandler(settingsFixture()), {
+      host,
+      origin: `http://${host}`,
+      method: 'PATCH',
+      body: '{"enabled":false}',
+    })
+    expect(result.status).toBe(200)
+    expect(result.body.enabled).toBe(false)
+  })
+
   it('exposes the endpoint under the plugin namespace', () => {
     expect(CONFIG_ENDPOINT).toBe('/plugins/maid-whale-webui/config')
   })

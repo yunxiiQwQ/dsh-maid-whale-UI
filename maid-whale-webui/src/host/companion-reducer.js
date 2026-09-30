@@ -307,7 +307,7 @@ export class CompanionReducer {
   }
 
   #resumeAfterTool(record, event) {
-    if (record.waitingCallId && record.openTools.has(record.waitingCallId)) {
+    if (record.waitingApprovalId || (record.waitingCallId && record.openTools.has(record.waitingCallId))) {
       return this.#render()
     }
     const next = record.openTools.size > 0 ? CompanionState.WORKING : CompanionState.THINKING

@@ -1200,7 +1200,7 @@ var CompanionReducer = class {
 		return this.#resumeAfterTool(record, event);
 	}
 	#resumeAfterTool(record, event) {
-		if (record.waitingCallId && record.openTools.has(record.waitingCallId)) return this.#render();
+		if (record.waitingApprovalId || record.waitingCallId && record.openTools.has(record.waitingCallId)) return this.#render();
 		const next = record.openTools.size > 0 ? CompanionState.WORKING : CompanionState.THINKING;
 		const nextPayload = {
 			phase: "tool-result",
@@ -1508,6 +1508,7 @@ var HelperProcess = class {
 		this.child = void 0;
 		this.queue = [];
 		this.snapshot = /* @__PURE__ */ new Map();
+		this.pending = /* @__PURE__ */ new Map();
 		this.spawned = false;
 		this.stopping = false;
 		this.restartSuppressed = false;
@@ -1563,6 +1564,9 @@ var HelperProcess = class {
 		}
 		this.child = child;
 		child.stdin.on("error", () => {});
+		child.stdin.on("drain", () => {
+			if (this.child === child) this.#flushOutgoing();
+		});
 		child.stdout.on("error", () => {});
 		child.stderr.on("error", () => {});
 		child.once("spawn", () => {
@@ -1607,11 +1611,13 @@ var HelperProcess = class {
 		return child;
 	}
 	send(message) {
-		this.#remember(message);
 		if (this.stopping || this.restartSuppressed) return;
 		const line = encodeMessage(message);
-		if (!this.child || !this.spawned || !this.child.stdin.writable || this.child.stdin.destroyed) {
-			if (!DURABLE_MESSAGE_KINDS.has(message.kind)) this.#enqueue(line);
+		const durable = DURABLE_MESSAGE_KINDS.has(message.kind);
+		if (durable) this.snapshot.set(message.kind, line);
+		if (!this.child || !this.spawned || !this.child.stdin.writable || this.child.stdin.destroyed || this.child.stdin.writableNeedDrain) {
+			if (durable) this.pending.set(message.kind, line);
+			else this.#enqueue(line);
 			return;
 		}
 		this.child.stdin.write(line);
@@ -1623,21 +1629,12 @@ var HelperProcess = class {
 		this.restartTimer = void 0;
 		const child = this.child;
 		if (!child) return;
-		this.queue.push(encodeMessage(createMessage(CompanionMessageKind.SHUTDOWN, { reason })));
-		if (this.spawned) {
-			this.#flushQueue();
-			this.#endInput(child);
-		}
+		this.pending.clear();
+		this.queue = [encodeMessage(createMessage(CompanionMessageKind.SHUTDOWN, { reason }))];
+		this.#flushOutgoing();
 		setTimeout(() => {
 			if (this.child === child) child.kill();
 		}, this.options.shutdownTimeoutMs ?? 1e4).unref?.();
-	}
-	#remember(message) {
-		if (message.kind === CompanionMessageKind.HELLO) this.snapshot.set("hello", encodeMessage(message));
-		if (message.kind === CompanionMessageKind.STATE) this.snapshot.set("state", encodeMessage(message));
-		if (message.kind === CompanionMessageKind.TASK) this.snapshot.set("task", encodeMessage(message));
-		if (message.kind === CompanionMessageKind.TASKS) this.snapshot.set("tasks", encodeMessage(message));
-		if (message.kind === CompanionMessageKind.CONFIG) this.snapshot.set("config", encodeMessage(message));
 	}
 	#enqueue(line) {
 		const limit = Math.max(0, this.options.maxQueuedMessages ?? 64);
@@ -1645,17 +1642,15 @@ var HelperProcess = class {
 		this.queue.push(line);
 		if (this.queue.length > limit) this.queue.splice(0, this.queue.length - limit);
 	}
-	#flushSnapshot() {
+	#flushOutgoing() {
 		const child = this.child;
-		if (!this.spawned || !child?.stdin.writable || child.stdin.destroyed) return;
-		const payload = [...this.snapshot.values()].join("");
-		if (payload) child.stdin.write(payload);
-	}
-	#flushQueue() {
-		const child = this.child;
-		if (!this.spawned || !child?.stdin.writable || child.stdin.destroyed) return;
-		const payload = this.queue.splice(0).join("");
-		if (payload) child.stdin.write(payload);
+		if (!this.spawned || !child?.stdin.writable || child.stdin.destroyed || child.stdin.writableNeedDrain) return;
+		for (const [kind, line] of this.pending) {
+			this.pending.delete(kind);
+			if (!child.stdin.write(line)) return;
+		}
+		while (this.queue.length) if (!child.stdin.write(this.queue.shift())) return;
+		if (this.stopping) this.#endInput(child);
 	}
 	#handleReply(line) {
 		if (!line.trim()) return;
@@ -1667,10 +1662,9 @@ var HelperProcess = class {
 				this.startFailures = 0;
 				this.lastPongAt = Date.now();
 				this.#clearStartupTimer();
-				this.#flushSnapshot();
-				this.#flushQueue();
-				this.#startHeartbeat();
-				if (this.stopping) this.#endInput(this.child);
+				this.pending = new Map(this.stopping ? [] : this.snapshot);
+				this.#flushOutgoing();
+				if (!this.stopping) this.#startHeartbeat();
 				return;
 			}
 			if (reply?.protocolVersion === 1 && reply.kind === CompanionMessageKind.PONG) {
@@ -1831,6 +1825,10 @@ function createConfigHandler(settings) {
 	return async (req, res) => {
 		if (!isLoopback(req.socket?.remoteAddress)) {
 			jsonResponse(res, 403, { error: "local access only" });
+			return;
+		}
+		if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(req.headers?.host ?? "")) {
+			jsonResponse(res, 403, { error: "untrusted host" });
 			return;
 		}
 		const origin = req.headers?.origin;

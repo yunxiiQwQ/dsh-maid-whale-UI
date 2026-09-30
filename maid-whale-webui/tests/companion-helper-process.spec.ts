@@ -154,6 +154,54 @@ describe('helper process launch resolution', () => {
 })
 
 describe('helper process bridge', () => {
+  it.each([false, true])(
+    'bounds blocked writes and drains cleanly (stop while blocked: %s)',
+    async (stopEarly) => {
+      const source = [
+        "console.log(JSON.stringify({ protocolVersion: 1, kind: 'ready' }))",
+        "setTimeout(() => require('node:readline').createInterface({ input: process.stdin }).on('line', line => { const message = JSON.parse(line); console.log(JSON.stringify({ kind: message.kind, index: message.index })) }), 800)",
+      ].join('; ')
+      const bridge = new HelperProcess(
+        { command: process.execPath, args: ['-e', source], heartbeatMs: 0, maxQueuedMessages: 4 },
+        { debug() {}, info() {}, warn() {}, error() {} } as unknown as Console,
+      )
+      const child = bridge.start()!
+      const replies: string[] = []
+      child.stdout.on('data', (chunk: Buffer) => replies.push(chunk.toString()))
+      const closed = new Promise<void>((resolve) => child.once('close', () => resolve()))
+      try {
+        await waitFor(() => bridge.spawned)
+        for (let index = 0; index < 128; index += 1) {
+          bridge.send(
+            createMessage(CompanionMessageKind.STATE, {
+              state: CompanionState.WORKING,
+              message: 'x'.repeat(65536),
+              index,
+            }),
+          )
+        }
+        for (let index = 0; index < 8; index += 1) {
+          bridge.send(createMessage(CompanionMessageKind.PULSE, { state: CompanionState.SUCCESS, index }))
+        }
+        expect(child.stdin.writableLength).toBeLessThan(128 * 1024)
+        expect(bridge.queue.length).toBeLessThanOrEqual(4)
+        if (!stopEarly) {
+          await waitFor(() => replies.join('').includes('"kind":"state","index":127'))
+          await waitFor(() => replies.join('').includes('"kind":"pulse","index":7'))
+        }
+        bridge.stop('backpressure-test')
+        await waitFor(() => replies.join('').includes('"kind":"shutdown"'))
+        await closed
+        expect(child.exitCode).toBe(0)
+      } finally {
+        bridge.stop('test-cleanup')
+        if (child.exitCode === null) child.kill()
+        await closed
+      }
+    },
+    15000,
+  )
+
   it('keeps only durable snapshots and a bounded transient queue before READY', () => {
     const bridge = new HelperProcess({ maxQueuedMessages: 4 }, console)
     for (let index = 0; index < 20; index += 1) {

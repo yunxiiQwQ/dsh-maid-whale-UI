@@ -118,6 +118,7 @@ export class HelperProcess {
     this.child = undefined
     this.queue = []
     this.snapshot = new Map()
+    this.pending = new Map()
     this.spawned = false
     this.stopping = false
     this.restartSuppressed = false
@@ -173,6 +174,9 @@ export class HelperProcess {
     // A broken pipe on any child channel must never crash the DSH host.
     // EPIPE on stdin is expected after the helper dies before we flush.
     child.stdin.on('error', () => {})
+    child.stdin.on('drain', () => {
+      if (this.child === child) this.#flushOutgoing()
+    })
     child.stdout.on('error', () => {})
     child.stderr.on('error', () => {})
     child.once('spawn', () => {
@@ -223,11 +227,19 @@ export class HelperProcess {
   }
 
   send(message) {
-    this.#remember(message)
     if (this.stopping || this.restartSuppressed) return
     const line = encodeMessage(message)
-    if (!this.child || !this.spawned || !this.child.stdin.writable || this.child.stdin.destroyed) {
-      if (!DURABLE_MESSAGE_KINDS.has(message.kind)) this.#enqueue(line)
+    const durable = DURABLE_MESSAGE_KINDS.has(message.kind)
+    if (durable) this.snapshot.set(message.kind, line)
+    if (
+      !this.child ||
+      !this.spawned ||
+      !this.child.stdin.writable ||
+      this.child.stdin.destroyed ||
+      this.child.stdin.writableNeedDrain
+    ) {
+      if (durable) this.pending.set(message.kind, line)
+      else this.#enqueue(line)
       return
     }
     this.child.stdin.write(line)
@@ -240,23 +252,13 @@ export class HelperProcess {
     this.restartTimer = undefined
     const child = this.child
     if (!child) return
-    this.queue.push(encodeMessage(createMessage(CompanionMessageKind.SHUTDOWN, { reason })))
-    if (this.spawned) {
-      this.#flushQueue()
-      this.#endInput(child)
-    }
+    this.pending.clear()
+    this.queue = [encodeMessage(createMessage(CompanionMessageKind.SHUTDOWN, { reason }))]
+    this.#flushOutgoing()
     const timer = setTimeout(() => {
       if (this.child === child) child.kill()
     }, this.options.shutdownTimeoutMs ?? 10000)
     timer.unref?.()
-  }
-
-  #remember(message) {
-    if (message.kind === CompanionMessageKind.HELLO) this.snapshot.set('hello', encodeMessage(message))
-    if (message.kind === CompanionMessageKind.STATE) this.snapshot.set('state', encodeMessage(message))
-    if (message.kind === CompanionMessageKind.TASK) this.snapshot.set('task', encodeMessage(message))
-    if (message.kind === CompanionMessageKind.TASKS) this.snapshot.set('tasks', encodeMessage(message))
-    if (message.kind === CompanionMessageKind.CONFIG) this.snapshot.set('config', encodeMessage(message))
   }
 
   #enqueue(line) {
@@ -266,18 +268,19 @@ export class HelperProcess {
     if (this.queue.length > limit) this.queue.splice(0, this.queue.length - limit)
   }
 
-  #flushSnapshot() {
+  #flushOutgoing() {
     const child = this.child
-    if (!this.spawned || !child?.stdin.writable || child.stdin.destroyed) return
-    const payload = [...this.snapshot.values()].join('')
-    if (payload) child.stdin.write(payload)
-  }
-
-  #flushQueue() {
-    const child = this.child
-    if (!this.spawned || !child?.stdin.writable || child.stdin.destroyed) return
-    const payload = this.queue.splice(0).join('')
-    if (payload) child.stdin.write(payload)
+    if (!this.spawned || !child?.stdin.writable || child.stdin.destroyed || child.stdin.writableNeedDrain) return
+    // A false write result means the line was accepted, but subsequent lines
+    // must wait for drain. Coalesce durable updates while that pipe is full.
+    for (const [kind, line] of this.pending) {
+      this.pending.delete(kind)
+      if (!child.stdin.write(line)) return
+    }
+    while (this.queue.length) {
+      if (!child.stdin.write(this.queue.shift())) return
+    }
+    if (this.stopping) this.#endInput(child)
   }
 
   #handleReply(line) {
@@ -290,10 +293,9 @@ export class HelperProcess {
         this.startFailures = 0
         this.lastPongAt = Date.now()
         this.#clearStartupTimer()
-        this.#flushSnapshot()
-        this.#flushQueue()
-        this.#startHeartbeat()
-        if (this.stopping) this.#endInput(this.child)
+        this.pending = new Map(this.stopping ? [] : this.snapshot)
+        this.#flushOutgoing()
+        if (!this.stopping) this.#startHeartbeat()
         return
       }
       if (reply?.protocolVersion === 1 && reply.kind === CompanionMessageKind.PONG) {

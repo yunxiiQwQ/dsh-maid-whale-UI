@@ -171,6 +171,12 @@ export function createConfigHandler(
       jsonResponse(res, 403, { error: 'local access only' })
       return
     }
+    // Origin and Host can both name an attacker-controlled domain after DNS
+    // rebinding. Require a loopback authority before comparing the two.
+    if (!/^(?:localhost|127\.0\.0\.1|\[::1\])(?::\d{1,5})?$/i.test(req.headers?.host ?? '')) {
+      jsonResponse(res, 403, { error: 'untrusted host' })
+      return
+    }
     const origin = req.headers?.origin
     if (origin) {
       let originHost: string | undefined

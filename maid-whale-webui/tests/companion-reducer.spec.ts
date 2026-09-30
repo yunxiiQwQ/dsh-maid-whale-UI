@@ -16,6 +16,19 @@ function event(type: string, data: Record<string, unknown> = {}, seq = 0): FakeE
 }
 
 describe('companion reducer', () => {
+  it('keeps waiting for approval when a parallel tool finishes', () => {
+    const reducer = new CompanionReducer()
+    reducer.handle(session, event('turn/start'))
+    reducer.handle(session, event('tool/call', { callId: 'a', name: 'shell' }))
+    reducer.handle(session, event('tool/call', { callId: 'b', name: 'read_file' }))
+    const [waiting] = reducer.handle(session, event('approval/asked', { id: 'approval-a', toolName: 'shell' }))
+    expect(waiting.state).toBe(CompanionState.WAITING)
+    expect(reducer.handle(session, event('tool/result', { callId: 'b' }))).toEqual([])
+    expect(reducer.handle(session, event('approval/decided', { id: 'unrelated' }))).toEqual([])
+    const [resumed] = reducer.handle(session, event('approval/decided', { id: 'approval-a' }))
+    expect(resumed.state).toBe(CompanionState.WORKING)
+  })
+
   it('turn and tool events produce stable companion states', () => {
     const reducer = new CompanionReducer()
     expect(reducer.handle(session, event('turn/start', { turn: 1 }, 1))[0].state).toBe(CompanionState.THINKING)
