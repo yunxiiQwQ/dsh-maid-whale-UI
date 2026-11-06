@@ -99,6 +99,28 @@ describe('ornament controller', () => {
     expect(document.querySelector('[role="tree"]')?.hasAttribute('data-dsh-ornament-target')).toBe(false)
   })
 
+  it('removes sidebar ornaments when the sidebar hides and restores them when it opens', async () => {
+    fixture()
+    const sidebar = document.querySelector<HTMLElement>('[role="tree"]')!
+    const sidebarOrnaments = () =>
+      document.querySelectorAll('[data-dsh-ornament="whaleTail"], [data-dsh-ornament="bow"]')
+    controller = createOrnamentController(document.body, { wide: true })
+    controller.sync()
+    expect(sidebarOrnaments()).toHaveLength(2)
+
+    sidebar.style.display = 'none'
+    await tick()
+    expect(sidebarOrnaments()).toHaveLength(0)
+
+    sidebar.style.removeProperty('display')
+    await tick()
+    expect(sidebarOrnaments()).toHaveLength(2)
+
+    sidebar.remove()
+    await tick()
+    expect(sidebarOrnaments()).toHaveLength(0)
+  })
+
   it('does not decorate a dialog that has transitioned out of view', () => {
     fixture()
     const fadingShell = document.createElement('div')

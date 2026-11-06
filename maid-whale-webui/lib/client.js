@@ -886,7 +886,7 @@ window.__ModuleLoader__.load({
 					dialog: targets.dialog != null,
 					composerEngaged,
 					heading: targets.heading != null
-				});
+				}).filter((id) => targetFor(id, targets) != null);
 				const selectedSet = new Set(selected);
 				layer.querySelectorAll("img[data-dsh-ornament]").forEach((image) => {
 					if (!selectedSet.has(image.dataset.dshOrnament)) image.remove();

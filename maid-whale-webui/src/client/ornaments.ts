@@ -136,7 +136,7 @@ export function createOrnamentController(body: HTMLElement, options: { wide: boo
       dialog: targets.dialog != null,
       composerEngaged,
       heading: targets.heading != null,
-    })
+    }).filter((id) => targetFor(id, targets) != null)
     const selectedSet = new Set<OrnamentId>(selected)
 
     layer.querySelectorAll<HTMLImageElement>('img[data-dsh-ornament]').forEach((image) => {
